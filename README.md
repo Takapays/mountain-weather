@@ -1,18 +1,74 @@
-# Mountain Weather Decision V5
+# 山行判断ツール V5.1
 
-V4.12までの登山ルート・複数気象モデル分析機能を、インターネット公開しやすい構成に整理した公開用パッケージです。
+V5の公開構成に、**匿名利用ログ・処理時間・エラー計測**を追加した運用改善版です。
 
-## V5で変わったこと
+## V5.1で追加したもの
 
-- Python標準の簡易HTTPサーバーから **Flask + Gunicorn** に変更
-- Renderの `PORT` 環境変数と `0.0.0.0` bindに対応
-- `render.yaml` を同梱（Render Blueprint対応）
-- `/api/health` を公開用ヘルスチェックとして整備
-- Open-Meteo / Geocoding / Elevation / Overpassへの通信は、引き続きサーバー経由
-- 外部APIの許可ホストをホワイトリスト化
-- 外部APIレスポンスに短時間のメモリキャッシュを追加
-- Overpassを複数エンドポイントへ自動フォールバック
-- `requirements.txt` / `Procfile` / `.gitignore` / `.env.example` を追加
+- ページ表示 (`page_view`)
+- ルート候補読込 (`route_candidates_loaded`)
+- ルート作成 (`route_created`)
+- 登山道・距離計算 (`trail_route_calculated`)
+- 到達時刻計算 (`arrival_times_calculated`)
+- 天気分析 (`weather_analysis`)
+- 各処理の成功/失敗、処理時間、山名、地点数、宿泊数、エラー内容
+- Supabase未設定時は Render Logs へ `[usage]` 形式で出力
+- Supabase設定時は `usage_events` テーブルへ自動保存
+
+### プライバシー方針
+
+アプリの匿名利用ログには、氏名・メールアドレス・IPアドレスを保存しません。`session_id` はページを開くたびに生成される一時IDで、Cookie / localStorage には保存しません。
+
+## まずはSupabaseなしでも使えます
+
+そのままRenderへデプロイすると、Render Dashboard > Logs で以下のようなログを確認できます。
+
+```text
+[usage] {"event_name":"weather_analysis", ...}
+```
+
+永続保存したい場合だけ、以下のSupabase設定を行ってください。
+
+## Supabaseへ利用ログを保存する
+
+### 1. Supabaseプロジェクトを作る
+
+Supabaseで新規Projectを作成します。
+
+### 2. テーブルを作る
+
+Supabase Dashboardの **SQL Editor** を開き、このパッケージの
+`supabase_usage_events.sql` を貼り付けて実行してください。
+
+作成される主なもの:
+
+- `public.usage_events` : 生の匿名イベントログ
+- `public.usage_daily_summary` : 日別の簡易集計View
+
+### 3. Renderに環境変数を追加
+
+Renderの `mountain-weather` Web Service > Environment に次の2つを追加します。
+
+```text
+SUPABASE_URL=https://xxxxxxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=xxxxxxxx
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` はブラウザ側には絶対に置かず、Renderの環境変数だけに保存してください。
+
+保存後、Renderで再デプロイします。
+
+### 4. 動作確認
+
+公開サイトで一度操作した後、SupabaseのTable Editorで `usage_events` を開きます。
+
+例:
+
+| event_name | success | mountain | duration_ms |
+|---|---|---|---:|
+| page_view | true |  |  |
+| route_candidates_loaded | true | 槍ヶ岳 | 3210 |
+| trail_route_calculated | true | 槍ヶ岳 | 18450 |
+| weather_analysis | true | 槍ヶ岳 | 6120 |
 
 ## ローカル起動
 
@@ -38,7 +94,7 @@ pip install -r requirements.txt
 python server.py
 ```
 
-ブラウザで以下を開きます。
+ブラウザ:
 
 ```text
 http://localhost:8000
@@ -50,47 +106,9 @@ http://localhost:8000
 http://localhost:8000/api/health
 ```
 
-## Renderへ公開する最短手順
+`supabase_configured: false` ならRenderログのみ、`true` ならSupabase保存も有効です。
 
-### 1. GitHubへアップロード
-
-このフォルダの中身をGitHubリポジトリのルートへ置きます。
-
-必要ファイル:
-
-- `server.py`
-- `index.html`
-- `app.js`
-- `styles.css`
-- `requirements.txt`
-- `render.yaml`
-
-### 2. RenderでBlueprintを作成
-
-Render Dashboardで **New > Blueprint** を選び、GitHubリポジトリを接続してください。
-
-ルートにある `render.yaml` が自動で読み込まれます。
-
-設定済み内容:
-
-- Runtime: Python
-- Build: `pip install -r requirements.txt`
-- Start: `gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 server:app`
-- Health check: `/api/health`
-
-### 3. Deploy
-
-デプロイ完了後、Renderから以下のような公開URLが発行されます。
-
-```text
-https://mountain-weather-decision.onrender.com
-```
-
-GitHubへpushすると自動再デプロイされます。
-
-## Renderを手動設定する場合
-
-Blueprintを使わない場合はWeb Serviceを作成し、以下を設定します。
+## Render設定
 
 **Build Command**
 
@@ -114,39 +132,20 @@ gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 server:app
 
 | 変数 | 既定値 | 用途 |
 |---|---:|---|
-| `PORT` | 8000 | ローカル起動ポート。Renderでは自動設定 |
-| `UPSTREAM_TIMEOUT` | 45 | Open-Meteo等へのタイムアウト秒 |
-| `OVERPASS_TIMEOUT` | 70 | Overpass APIのタイムアウト秒 |
-| `CACHE_TTL` | 120 | 外部APIレスポンスのメモリキャッシュ秒 |
+| `PORT` | 8000 | ローカル起動ポート |
+| `UPSTREAM_TIMEOUT` | 45 | Open-Meteo等のタイムアウト秒 |
+| `OVERPASS_TIMEOUT` | 70 | Overpassタイムアウト秒 |
+| `CACHE_TTL` | 120 | 外部APIメモリキャッシュ秒 |
 | `CACHE_MAX_ITEMS` | 256 | キャッシュ最大件数 |
-| `MAX_OVERPASS_BYTES` | 524288 | Overpassクエリ最大サイズ |
-| `OVERPASS_ENDPOINTS` | 複数既定値 | カンマ区切りのOverpass接続先 |
-| `UPSTREAM_USER_AGENT` | V5既定値 | 外部APIへ送信するUser-Agent |
+| `SUPABASE_URL` | 未設定 | Supabase Project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | 未設定 | サーバー専用Service Role Key |
+| `USAGE_LOG_STDOUT` | 1 | Renderログへの匿名イベント出力 |
+| `USAGE_EVENT_TIMEOUT` | 8 | Supabase書込タイムアウト秒 |
 
-## 公開前に推奨すること
+## GitHubへ更新する場合
 
-1. `UPSTREAM_USER_AGENT` を自分の公開URLや連絡先を含む値へ変更
-2. 独自ドメインを設定する場合はHTTPSを確認
-3. 多人数に公開する場合はレート制限・永続キャッシュを追加
-4. Open-Meteo / OpenStreetMap / Overpassの利用条件・帰属表示を確認
-5. 山岳気象の判断補助であり、安全を保証しない旨をUI上に維持
-
-## 構成
-
-```text
-mountain-weather-v5/
-├─ index.html
-├─ app.js
-├─ styles.css
-├─ server.py
-├─ requirements.txt
-├─ render.yaml
-├─ Procfile
-├─ .env.example
-├─ .gitignore
-└─ README.md
-```
+V5.1のファイル一式を既存 `mountain-weather` リポジトリへ上書きアップロードしてCommitしてください。RenderのAuto Deployが有効なら、そのCommitを検知して自動で再デプロイされます。
 
 ## 注意
 
-このアプリは登山判断を支援するプロトタイプです。気象モデル、地図データ、ルート探索結果には欠測・遅延・位置誤差・モデル誤差があり得ます。実際の登山では公式の気象情報、登山地図、現地状況と併用してください。
+このアプリは登山判断を支援するツールです。気象モデル、地図データ、ルート探索結果には欠測・遅延・位置誤差・モデル誤差があり得ます。実際の登山では公式の気象情報、登山地図、現地状況と併用してください。

@@ -17,3 +17,6 @@ services:
         value: "70"
       - key: CACHE_TTL
         value: "120"
+
+      - key: USAGE_LOG_STDOUT
+        value: "1"

@@ -4,18 +4,18 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="地図・山岳POI・複数気象モデルを統合した登山向け天気判断アプリ" />
-  <title>山行判断ツール | V5</title>
+  <title>山行判断ツール | V5.1</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=5.0" />
+  <link rel="stylesheet" href="styles.css?v=5.1" />
 </head>
 <body>
   <header class="hero">
     <div>
-      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5</p>
+      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5.1</p>
       <h1>山行判断ツール</h1>
       <p>山に行くか？やめるか？</p>
     </div>
-    <div class="hero-badge">V5</div>
+    <div class="hero-badge">V5.1</div>
   </header>
 
   <main>
@@ -210,15 +210,15 @@
 
     <section id="decisionSection" class="decision-grid hidden">
       <article class="panel"><div class="section-title"><div><span>07</span><h2>撤退ライン</h2></div></div><ul id="retreatLines"></ul></article>
-      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5の読み方</h2></div></div>
+      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5.1の読み方</h2></div></div>
         <p>「登山道ルートを生成」で、登録ポイント間をOpenStreetMapの徒歩・登山道ネットワーク上で探索します。接続できない区間は直線フォールバックとして明示します。</p>
         <p>標高はOpen-Meteo Elevation APIのDEMから取得し、距離・累積標高・推定コースタイムを算出します。宿泊地点は到着後〜翌朝出発までの時間別予報を別途取得し、最低気温・雨・風・雷を専用カードで表示します。</p>
       </article>
     </section>
   </main>
 
-  <footer>Weather & elevation via Open-Meteo / POI & trail network via OpenStreetMap & Overpass API. Prototype for mountaineering decision support. 予報は安全を保証しません。</footer>
+  <footer>Weather & elevation via Open-Meteo / POI & trail network via OpenStreetMap & Overpass API. 予報は安全を保証しません。<br><small>サービス改善のため、匿名の操作イベント・処理時間・エラーを記録します。アプリの利用ログには氏名・メールアドレス・IPアドレスを保存しません。</small></footer>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js?v=5.0"></script>
+  <script src="app.js?v=5.1"></script>
 </body>
 </html>

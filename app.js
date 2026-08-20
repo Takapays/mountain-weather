@@ -153,6 +153,33 @@ let routeProfile = [];
 let routeSummary = null;
 let overnightResults = [];
 
+const APP_VERSION = '5.1';
+const USAGE_SESSION_ID = (globalThis.crypto?.randomUUID?.() || `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`);
+
+function logEvent(eventName, details={}){
+  try{
+    const payload={
+      session_id:USAGE_SESSION_ID,
+      app_version:APP_VERSION,
+      event_name:eventName,
+      success:details.success ?? true,
+      duration_ms:Number.isFinite(details.duration_ms)?Math.round(details.duration_ms):null,
+      mountain:details.mountain ?? currentMountainName() ?? '',
+      route_points:Number.isFinite(details.route_points)?details.route_points:null,
+      stay_count:Number.isFinite(details.stay_count)?details.stay_count:null,
+      error_message:details.error_message ? String(details.error_message).slice(0,700) : null,
+      metadata:details.metadata && typeof details.metadata==='object' ? details.metadata : {}
+    };
+    fetch('/api/event',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
+      keepalive:true,
+      cache:'no-store'
+    }).catch(()=>{});
+  }catch(_e){}
+}
+
 init();
 
 function init(){
@@ -180,6 +207,7 @@ function init(){
     const first=$('routePoints').querySelector('.point-time'); if(first) first.value=$('wizardStartTime').value;
   });
   initMap();
+  logEvent('page_view',{success:true,metadata:{viewport_width:window.innerWidth,viewport_height:window.innerHeight}});
 }
 
 
@@ -319,9 +347,12 @@ async function ensureWizardPointElevations(points){
   missing.forEach((p,i)=>p.elevation=Math.round(elev[i]));
 }
 async function createRouteFromWizard(){
+  const startedAt=performance.now();
+  let selectedCount=0, stayCount=0;
   try{
     setWizardRouteState('① 選択内容を確認しています…','loading');
     const selected=collectWizardSelections();
+    selectedCount=selected.length; stayCount=selected.filter(p=>p.stay?.enabled).length;
     $('createWizardRoute').disabled=true;
 
     setWizardRouteState('② 地点位置を確認しています…','loading');
@@ -341,10 +372,12 @@ async function createRouteFromWizard(){
     if(trailSegments.length) autoFillArrivalTimes();
     const nights=selected.filter(p=>p.stay?.enabled).length;
     setWizardRouteState(`✓ ルート完成${nights?`（${nights}泊）`:''}：${selected.map(p=>p.name).join(' → ')}`,'success');
+    logEvent('route_created',{success:true,duration_ms:performance.now()-startedAt,route_points:selected.length,stay_count:nights,metadata:{pace_multiplier:paceMultiplier()}});
   }catch(e){
     const msg=e.message||String(e);
     setWizardRouteState(`エラー：${msg}`,'error');
     setStatus(msg,true);
+    logEvent('route_created',{success:false,duration_ms:performance.now()-startedAt,route_points:selectedCount,stay_count:stayCount,error_message:msg});
   }finally{$('createWizardRoute').disabled=false;}
 }
 
@@ -504,6 +537,7 @@ async function proxyFetch(url, options={}){
 }
 
 async function loadMountainPois(){
+  const startedAt=performance.now();
   const mountain=currentMountainName();
   if(!mountain) return setStatus('先に山域・山名を入力してください。', true);
   setStatus(`${mountain} の中心位置と周辺ポイントを検索しています…`);
@@ -540,11 +574,13 @@ async function loadMountainPois(){
     $('wizardMeta').textContent=`登山口 ${wizardCandidates('trailhead').length} / 小屋 ${wizardCandidates('hut').length} / 乗越・峠 ${wizardCandidates('pass').length} / 山頂 ${wizardCandidates('peak').length}`;
     setStatus(`${poiCandidates.length} 件の候補を取得しました。出発登山口から順番に選んでください。`);
     setLoadPoiState(`✓ ${poiCandidates.length}件の候補を準備しました。下の「出発する登山口」から選べます。`, 'success');
+    logEvent('route_candidates_loaded',{success:true,duration_ms:performance.now()-startedAt,mountain,metadata:{candidate_count:poiCandidates.length,builtin_count:builtin.length,osm_count:osm.length}});
     setTimeout(()=>{ $('routeWizard').scrollIntoView({behavior:'smooth',block:'start'}); }, 80);
   }catch(e){
     const msg=e.message || String(e);
     setStatus(msg, true);
     setLoadPoiState(`取得失敗：${msg}　もう一度押すと再試行します。`, 'error');
+    logEvent('route_candidates_loaded',{success:false,duration_ms:performance.now()-startedAt,mountain,error_message:msg});
   }
   finally{
     loadBtn.disabled=false;
@@ -713,11 +749,14 @@ async function hydrateMissingCoordinates(){
 
 async function buildTrailRoute(options={}){
   const wizard=Boolean(options.wizard);
+  const startedAt=performance.now();
+  let pointCount=0;
   try{
     routeRecalcState('① 再計算を開始しました。地点位置を確認しています…','loading');
     $('buildTrailBtn').disabled=true; $('autoTimeBtn').disabled=true;
     await hydrateMissingCoordinates();
     const points=collectPoints();
+    pointCount=points.length;
     if(points.length<2) throw new Error('ルート地点を2地点以上登録してください。');
     for(const p of points) if(!Number.isFinite(p.lat)||!Number.isFinite(p.lon)) throw new Error(`${p.name||p.index+'番目'} の位置情報を取得できませんでした。`);
     routeRecalcState(`① 登山道を探索中… 0/${points.length-1}`,'loading');
@@ -743,13 +782,15 @@ async function buildTrailRoute(options={}){
     $('autoTimeBtn').disabled=false;
     routeRecalcState('① 完了。続けて②「到達時刻を再計算」を押せます。','success');
     const fallback=segments.filter(x=>x.fallback).length;
-    setStatus(`V5ルート生成完了：${(routeSummary.distance/1000).toFixed(2)}km / 登り${Math.round(routeSummary.ascent)}m / 推定${formatDuration(routeSummary.minutes)}${fallback?`。${fallback}区間は登山道接続が見つからず直線フォールバックです。`:''}`);
+    setStatus(`V5.1ルート生成完了：${(routeSummary.distance/1000).toFixed(2)}km / 登り${Math.round(routeSummary.ascent)}m / 推定${formatDuration(routeSummary.minutes)}${fallback?`。${fallback}区間は登山道接続が見つからず直線フォールバックです。`:''}`);
+    logEvent('trail_route_calculated',{success:true,duration_ms:performance.now()-startedAt,route_points:points.length,metadata:{segments:segments.length,fallback_segments:fallback,distance_km:Number((routeSummary.distance/1000).toFixed(2)),ascent_m:Math.round(routeSummary.ascent),descent_m:Math.round(routeSummary.descent),course_minutes:Math.round(routeSummary.minutes),pace_multiplier:paceMultiplier()}});
     return true;
   }catch(e){
     const msg=e.message||String(e);
     setStatus(msg,true);
     routeRecalcState(`再計算エラー：${msg}`,'error');
     if(wizard) setWizardRouteState(`登山道生成エラー：${msg}`,'error');
+    logEvent('trail_route_calculated',{success:false,duration_ms:performance.now()-startedAt,route_points:pointCount,error_message:msg,metadata:{wizard}});
     return false;
   }finally{$('buildTrailBtn').disabled=false;}
 }
@@ -890,14 +931,18 @@ function autoFillArrivalTimes(){
   }
   const nights=els.filter(el=>el.dataset.stay).length;
   setStatus(`推定コースタイムから各地点の到達日時を自動入力しました${nights?`（${nights}泊を反映）`:''}。`); updateMap();
+  logEvent('arrival_times_calculated',{success:true,route_points:els.length,stay_count:nights,metadata:{pace_multiplier:paceMultiplier()}});
 }
 function addDays(iso,days){const d=new Date(`${iso}T12:00:00`);d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
 function timeToMinutes(s){const [h,m]=s.split(':').map(Number);return h*60+m;}
 function minutesToTime(m){m=((m%1440)+1440)%1440;return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}
 
 async function analyze(){
+  const startedAt=performance.now();
+  let pointCount=0, stayCount=0;
   try{
     const points=collectPoints(); validatePoints(points);
+    pointCount=points.length;
     $('analyzeBtn').disabled=true; setStatus(`ルート ${points.length} 地点 × ${providers.length} モデルを取得しています…`);
     const results=[];
     for(let i=0;i<points.length;i++){
@@ -905,6 +950,7 @@ async function analyze(){
       results.push(await analyzePoint(points[i]));
     }
     const stayPoints=points.filter(p=>p.stay?.enabled);
+    stayCount=stayPoints.length;
     overnightResults=[];
     for(let i=0;i<stayPoints.length;i++){
       setStatus(`宿泊 ${i+1}/${stayPoints.length} ${stayPoints[i].name} の夜〜翌朝を分析しています…`);
@@ -914,7 +960,8 @@ async function analyze(){
     analyzedPoints=results; renderAll(results); updateMap();
     const stayMsg=stayPoints.length?` / 宿泊 ${stayPoints.length} 泊の夜間予報を分析` : '';
     setStatus(`分析完了：${points.length} 地点 × 最大 ${providers.length} モデル${stayMsg}。`);
-  }catch(e){ setStatus(e.message||String(e),true); }
+    logEvent('weather_analysis',{success:true,duration_ms:performance.now()-startedAt,route_points:points.length,stay_count:stayPoints.length,metadata:{provider_count:providers.length}});
+  }catch(e){ const msg=e.message||String(e); setStatus(msg,true); logEvent('weather_analysis',{success:false,duration_ms:performance.now()-startedAt,route_points:pointCount,stay_count:stayCount,error_message:msg}); }
   finally{$('analyzeBtn').disabled=false;}
 }
 
