@@ -106,3 +106,6 @@
   .point-actions .geocode-point{width:100%;margin-right:0}
   .route-build-actions{grid-template-columns:1fr!important}
 }
+
+/* V5.2 release-only hidden compatibility controls */
+.release-hidden{display:none !important;}

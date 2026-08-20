@@ -4,18 +4,18 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="地図・山岳POI・複数気象モデルを統合した登山向け天気判断アプリ" />
-  <title>山行判断ツール | V5.1</title>
+  <title>山行判断ツール | V5.2.1</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=5.1" />
+  <link rel="stylesheet" href="styles.css?v=5.2" />
 </head>
 <body>
   <header class="hero">
     <div>
-      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5.1</p>
+      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5.2.1</p>
       <h1>山行判断ツール</h1>
       <p>山に行くか？やめるか？</p>
     </div>
-    <div class="hero-badge">V5.1</div>
+    <div class="hero-badge">V5.2.1</div>
   </header>
 
   <main>
@@ -98,50 +98,37 @@
         <div id="wizardRouteState" class="wizard-route-state" aria-live="polite">ルートを選んで「この順番でルートを作成」を押してください</div>
       </div>
 
-      <details class="advanced-details">
-        <summary>詳細編集・手入力地点を追加</summary>
-        <div id="poiPicker" class="poi-picker hidden">
-          <div class="poi-controls">
-            <label>種類
-              <select id="poiType">
-                <option value="all">すべて</option>
-                <option value="trailhead">登山口</option>
-                <option value="hut">山小屋・避難小屋</option>
-                <option value="camp">テント場</option>
-                <option value="pass">乗越・峠・鞍部</option>
-                <option value="peak">山頂</option>
-              </select>
-            </label>
-            <label>候補ポイント<select id="poiSelect"><option value="">候補を選択</option></select></label>
-            <label>通過時刻<input id="poiTime" type="time" value="06:00" /></label>
-            <button id="addPoiBtn" class="primary picker-add" type="button">ルートに追加</button>
-          </div>
-          <p id="poiMeta" class="fineprint"></p>
+      <div class="release-hidden" aria-hidden="true">
+        <button id="addPointBtn" type="button"></button>
+        <div id="poiPicker" class="hidden">
+          <select id="poiType"><option value="all">すべて</option></select>
+          <select id="poiSelect"><option value="">候補を選択</option></select>
+          <input id="poiTime" type="time" value="06:00" />
+          <button id="addPoiBtn" type="button"></button>
+          <p id="poiMeta"></p>
         </div>
-      </details>
+      </div>
 
       <div class="route-map-grid">
         <div>
           <div class="route-head">
             <div>
               <h3>ルート地点</h3>
-              <p>上から行動順。候補選択・地図クリック・手入力のどれでも追加できます。</p>
+              <p>上で選んだ登山口・経由ポイント・下山口を行動順に表示します。</p>
             </div>
-            <button id="addPointBtn" class="secondary small-btn">＋ 手入力地点</button>
           </div>
           <div id="routePoints" class="route-points"></div>
         </div>
         <div class="map-wrap">
           <div class="map-head">
-            <div><h3>ルートマップ</h3><p>地図クリックで任意地点も追加できます。</p></div>
+            <div><h3>ルートマップ</h3><p>作成した登山ルートを地図上に表示します。</p></div>
             <button id="fitMapBtn" class="ghost" type="button">ルート全体</button>
           </div>
-          <div class="route-build-actions">
-            <button id="buildTrailBtn" class="secondary" type="button">① 登山道・距離を再計算</button>
-            <button id="autoTimeBtn" class="ghost" type="button" disabled>② 到達時刻を再計算</button>
-            <div id="routeRecalcState" class="route-recalc-state" aria-live="polite">地点や歩行ペースを変更したら、①→②の順で再計算できます。</div>
+          <div class="release-hidden" aria-hidden="true">
+            <button id="buildTrailBtn" type="button"></button>
+            <button id="autoTimeBtn" type="button" disabled></button>
+            <div id="routeRecalcState"></div>
           </div>
-          <p class="route-action-help">通常は上の「この順番でルートを作成」で①②まで自動実行します。ここは手動修正後の再計算用です。</p>
           <div id="map" aria-label="登山ルート地図"></div>
           <div class="map-legend">
             <span><i class="dot trailhead"></i>登山口</span><span><i class="dot hut"></i>小屋</span><span><i class="dot camp"></i>テント場</span><span><i class="dot pass"></i>乗越/峠</span><span><i class="dot peak"></i>山頂</span><span><i class="dot manual"></i>任意</span>
@@ -210,7 +197,7 @@
 
     <section id="decisionSection" class="decision-grid hidden">
       <article class="panel"><div class="section-title"><div><span>07</span><h2>撤退ライン</h2></div></div><ul id="retreatLines"></ul></article>
-      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5.1の読み方</h2></div></div>
+      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5.2.1の読み方</h2></div></div>
         <p>「登山道ルートを生成」で、登録ポイント間をOpenStreetMapの徒歩・登山道ネットワーク上で探索します。接続できない区間は直線フォールバックとして明示します。</p>
         <p>標高はOpen-Meteo Elevation APIのDEMから取得し、距離・累積標高・推定コースタイムを算出します。宿泊地点は到着後〜翌朝出発までの時間別予報を別途取得し、最低気温・雨・風・雷を専用カードで表示します。</p>
       </article>
@@ -219,6 +206,6 @@
 
   <footer>Weather & elevation via Open-Meteo / POI & trail network via OpenStreetMap & Overpass API. 予報は安全を保証しません。<br><small>サービス改善のため、匿名の操作イベント・処理時間・エラーを記録します。アプリの利用ログには氏名・メールアドレス・IPアドレスを保存しません。</small></footer>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js?v=5.1"></script>
+  <script src="app.js?v=5.2"></script>
 </body>
 </html>

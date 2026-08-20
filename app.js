@@ -153,7 +153,7 @@ let routeProfile = [];
 let routeSummary = null;
 let overnightResults = [];
 
-const APP_VERSION = '5.1';
+const APP_VERSION = '5.2';
 const USAGE_SESSION_ID = (globalThis.crypto?.randomUUID?.() || `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`);
 
 function logEvent(eventName, details={}){
@@ -276,13 +276,23 @@ function addWizardWaypoint(type='peak', selected='', stay=null){
   $('waypointWizardRows').appendChild(row);
   const typeSel=row.querySelector('.wizard-waypoint-type');
   const pointSel=row.querySelector('.wizard-waypoint-select');
+  const stayWrap=row.querySelector('.stay-inline');
   const stayToggle=row.querySelector('.wizard-stay');
   const stayFields=row.querySelector('.stay-fields');
+  const stayType=row.querySelector('.wizard-stay-type');
   const updateStayAvailability=()=>{
     const p=selectedCandidate(pointSel.value);
     const eligible=stayEligibleCandidate(p);
+    stayWrap.classList.toggle('hidden', !eligible);
     stayToggle.disabled=!eligible;
-    if(!eligible){stayToggle.checked=false;stayFields.classList.add('hidden');}
+    if(!eligible){
+      stayToggle.checked=false;
+      stayFields.classList.add('hidden');
+    } else if(p?.type==='camp' && !stayToggle.checked){
+      stayType.value='tent';
+    } else if(p?.type==='hut' && !stayToggle.checked){
+      stayType.value='hut';
+    }
   };
   typeSel.addEventListener('change',()=>{pointSel.innerHTML=candidateOptions(typeSel.value); updateStayAvailability(); renumberWizardSteps();});
   pointSel.addEventListener('change',()=>{previewWizardPoi(pointSel.value);updateStayAvailability();});
@@ -412,11 +422,8 @@ function initMap(){
     ro.observe(mapEl);
   }
   window.addEventListener('resize', () => map.invalidateSize(false));
-  map.on('click', e => {
-    const time = nextSuggestedTime();
-    addRoutePoint({name:'地図上の地点',type:'manual',time,lat:e.latlng.lat,lon:e.latlng.lng,elevation:''});
-    updateMap();
-  });
+  // V5.2 release: map click is display-only; route points are selected in the route builder.
+
 }
 
 function addRoutePoint(point = {}){
@@ -782,7 +789,7 @@ async function buildTrailRoute(options={}){
     $('autoTimeBtn').disabled=false;
     routeRecalcState('① 完了。続けて②「到達時刻を再計算」を押せます。','success');
     const fallback=segments.filter(x=>x.fallback).length;
-    setStatus(`V5.1ルート生成完了：${(routeSummary.distance/1000).toFixed(2)}km / 登り${Math.round(routeSummary.ascent)}m / 推定${formatDuration(routeSummary.minutes)}${fallback?`。${fallback}区間は登山道接続が見つからず直線フォールバックです。`:''}`);
+    setStatus(`V5.2ルート生成完了：${(routeSummary.distance/1000).toFixed(2)}km / 登り${Math.round(routeSummary.ascent)}m / 推定${formatDuration(routeSummary.minutes)}${fallback?`。${fallback}区間は登山道接続が見つからず直線フォールバックです。`:''}`);
     logEvent('trail_route_calculated',{success:true,duration_ms:performance.now()-startedAt,route_points:points.length,metadata:{segments:segments.length,fallback_segments:fallback,distance_km:Number((routeSummary.distance/1000).toFixed(2)),ascent_m:Math.round(routeSummary.ascent),descent_m:Math.round(routeSummary.descent),course_minutes:Math.round(routeSummary.minutes),pace_multiplier:paceMultiplier()}});
     return true;
   }catch(e){
