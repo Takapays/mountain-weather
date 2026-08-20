@@ -19,6 +19,8 @@ const MOUNTAIN_PRESETS = {
   '双六岳': {latitude:36.3723, longitude:137.5875},
   '白馬岳': {latitude:36.7585, longitude:137.7586},
   '唐松岳': {latitude:36.6874, longitude:137.7547},
+  '五竜岳': {latitude:36.6584, longitude:137.7526},
+  '南岳': {latitude:36.3183, longitude:137.6519},
   '鹿島槍ヶ岳': {latitude:36.6244, longitude:137.7467},
   '剱岳': {latitude:36.6233, longitude:137.6170},
   '立山': {latitude:36.5759, longitude:137.6197},
@@ -125,9 +127,44 @@ const BUILTIN_ROUTE_CATALOG = {
   ]
 };
 
+
+
+const TRAVERSE_CATALOG = {
+  '槍ヶ岳': [
+    {id:'trv-yari-oku',type:'peak',name:'大喰岳',lat:36.3339,lon:137.6469,elevation:3101,sourceMountain:'槍ヶ岳〜南岳縦走'},
+    {id:'trv-yari-naka',type:'peak',name:'中岳',lat:36.3264,lon:137.6498,elevation:3084,sourceMountain:'槍ヶ岳〜南岳縦走'},
+    {id:'trv-yari-minami',type:'peak',name:'南岳',lat:36.3183,lon:137.6519,elevation:3033,sourceMountain:'槍ヶ岳〜南岳縦走'},
+    {id:'trv-yari-minamigoya',type:'hut',name:'南岳小屋',lat:36.3147,lon:137.6502,elevation:2970,sourceMountain:'槍ヶ岳〜南岳縦走'},
+    {id:'trv-yari-kitaho',type:'peak',name:'北穂高岳',lat:36.3028,lon:137.6511,elevation:3106,sourceMountain:'槍ヶ岳〜穂高縦走'},
+    {id:'trv-yari-kitahogoya',type:'hut',name:'北穂高小屋',lat:36.3025,lon:137.6502,elevation:3100,sourceMountain:'槍ヶ岳〜穂高縦走'}
+  ],
+  '白馬岳': [
+    {id:'trv-hakuba-tsugaike',type:'trailhead',name:'栂池自然園',lat:36.7498,lon:137.8618,elevation:1860,sourceMountain:'白馬岳'},
+    {id:'trv-hakuba-renge',type:'trailhead',name:'蓮華温泉',lat:36.7858,lon:137.7934,elevation:1475,sourceMountain:'白馬岳'},
+    {id:'trv-hakuba-oike',type:'hut',name:'白馬大池山荘',lat:36.7789,lon:137.7732,elevation:2380,sourceMountain:'白馬岳'},
+    {id:'trv-hakuba-oike-camp',type:'camp',name:'白馬大池テント場',lat:36.7789,lon:137.7732,elevation:2380,sourceMountain:'白馬岳'},
+    {id:'trv-hakuba-korenge',type:'peak',name:'小蓮華山',lat:36.7715,lon:137.7697,elevation:2766,sourceMountain:'白馬岳'},
+    {id:'trv-hakuba-shakushi',type:'peak',name:'杓子岳',lat:36.7447,lon:137.7530,elevation:2812,sourceMountain:'白馬岳〜唐松岳縦走'},
+    {id:'trv-hakuba-yari',type:'peak',name:'白馬鑓ヶ岳',lat:36.7334,lon:137.7494,elevation:2903,sourceMountain:'白馬岳〜唐松岳縦走'},
+    {id:'trv-hakuba-tengu',type:'hut',name:'天狗山荘',lat:36.7207,lon:137.7475,elevation:2730,sourceMountain:'白馬岳〜唐松岳縦走'},
+    {id:'trv-hakuba-fuki',type:'pass',name:'不帰キレット',lat:36.7045,lon:137.7504,elevation:2400,sourceMountain:'白馬岳〜唐松岳縦走'},
+    {id:'trv-hakuba-karamatsu',type:'peak',name:'唐松岳',lat:36.6874,lon:137.7547,elevation:2696,sourceMountain:'白馬岳〜唐松岳縦走'},
+    {id:'trv-hakuba-karamatsugoya',type:'hut',name:'唐松岳頂上山荘',lat:36.6878,lon:137.7576,elevation:2620,sourceMountain:'白馬岳〜唐松岳縦走'},
+    {id:'trv-hakuba-goryu',type:'peak',name:'五竜岳',lat:36.6584,lon:137.7526,elevation:2814,sourceMountain:'唐松岳〜五竜岳縦走'},
+    {id:'trv-hakuba-goryugoya',type:'hut',name:'五竜山荘',lat:36.6634,lon:137.7547,elevation:2490,sourceMountain:'唐松岳〜五竜岳縦走'},
+    {id:'trv-hakuba-alpsdaira',type:'trailhead',name:'アルプス平',lat:36.6817,lon:137.8332,elevation:1515,sourceMountain:'五竜岳'},
+    {id:'trv-hakuba-happo',type:'trailhead',name:'八方池山荘',lat:36.7030,lon:137.7893,elevation:1830,sourceMountain:'唐松岳'}
+  ],
+  '唐松岳': [],
+  '五竜岳': []
+};
+TRAVERSE_CATALOG['唐松岳'] = TRAVERSE_CATALOG['白馬岳'];
+TRAVERSE_CATALOG['五竜岳'] = TRAVERSE_CATALOG['白馬岳'];
+TRAVERSE_CATALOG['南岳'] = TRAVERSE_CATALOG['槍ヶ岳'];
+
 function builtinCandidates(mountain){
   const center=MOUNTAIN_PRESETS[mountain];
-  return (BUILTIN_ROUTE_CATALOG[mountain]||[]).map((p,i)=>({
+  return [...(BUILTIN_ROUTE_CATALOG[mountain]||[]), ...(TRAVERSE_CATALOG[mountain]||[])].map((p,i)=>({
     ...p,
     lat:Number.isFinite(p.lat)?p.lat:null,
     lon:Number.isFinite(p.lon)?p.lon:null,
@@ -153,7 +190,7 @@ let routeProfile = [];
 let routeSummary = null;
 let overnightResults = [];
 
-const APP_VERSION = '5.2';
+const APP_VERSION = '5.3';
 const USAGE_SESSION_ID = (globalThis.crypto?.randomUUID?.() || `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`);
 
 function logEvent(eventName, details={}){
@@ -200,6 +237,7 @@ function init(){
   $('paceMultiplier')?.addEventListener('change', handlePaceChange);
   $('mountainPreset').addEventListener('change', handleMountainPresetChange);
   $('addWizardWaypoint').addEventListener('click', () => addWizardWaypoint('hut'));
+  $('addWizardSummit')?.addEventListener('click', () => addWizardWaypoint('peak'));
   $('sameTrailhead').addEventListener('change', syncSameTrailhead);
   $('startTrailhead').addEventListener('change', syncSameTrailhead);
   $('createWizardRoute').addEventListener('click', createRouteFromWizard);
@@ -235,7 +273,7 @@ function stayEligibleCandidate(p){ return p && ['hut','camp'].includes(p.type); 
 
 function candidateOptions(type, selected=''){
   const list=wizardCandidates(type);
-  return '<option value="">候補を選択</option>'+list.slice(0,250).map(p=>`<option value="${esc(p.id)}" ${p.id===selected?'selected':''}>${esc(p.name)}${p.elevation!==''?` / ${p.elevation}m`:''}</option>`).join('');
+  return '<option value="">候補を選択</option>'+list.slice(0,250).map(p=>`<option value="${esc(p.id)}" ${p.id===selected?'selected':''}>${esc(p.name)}${p.sourceMountain?` ｜ ${esc(p.sourceMountain)}`:''}${p.elevation!==''?` / ${p.elevation}m`:''}</option>`).join('');
 }
 function populateTrailheadSelects(){
   const opts=candidateOptions('trailhead');
@@ -578,7 +616,7 @@ async function loadMountainPois(){
     populateTrailheadSelects(); resetWizardRows();
     $('poiMeta').textContent=`${center.name || mountain}: 内蔵候補 ${builtin.length}件 + ${osmNote}。未確定座標はルート作成時に検索します。`;
     renderPoiSelect(); renderPoiMarkers();
-    $('wizardMeta').textContent=`登山口 ${wizardCandidates('trailhead').length} / 小屋 ${wizardCandidates('hut').length} / 乗越・峠 ${wizardCandidates('pass').length} / 山頂 ${wizardCandidates('peak').length}`;
+    $('wizardMeta').textContent=`登山口 ${wizardCandidates('trailhead').length} / 小屋 ${wizardCandidates('hut').length} / 乗越・峠 ${wizardCandidates('pass').length} / 山頂 ${wizardCandidates('peak').length}。縦走は「次の山頂を追加」で連続追加できます。`;
     setStatus(`${poiCandidates.length} 件の候補を取得しました。出発登山口から順番に選んでください。`);
     setLoadPoiState(`✓ ${poiCandidates.length}件の候補を準備しました。下の「出発する登山口」から選べます。`, 'success');
     logEvent('route_candidates_loaded',{success:true,duration_ms:performance.now()-startedAt,mountain,metadata:{candidate_count:poiCandidates.length,builtin_count:builtin.length,osm_count:osm.length}});
@@ -1124,7 +1162,8 @@ function assessConfidence(rows){
 }
 
 function renderAll(points){
-  ['summary','routeForecastSection','timelineSection','modelsSection','decisionSection'].forEach(id=>$(id).classList.remove('hidden'));
+  ['summary','daySummarySection','routeForecastSection','timelineSection','modelsSection','decisionSection'].forEach(id=>$(id).classList.remove('hidden'));
+  renderDaySummaries(points);
   renderOvernightCards(overnightResults);
   const worst=points.reduce((a,b)=>gradeRank(b.grade)>gradeRank(a.grade)?b:a,points[0]);
   const best=points.reduce((a,b)=>gradeRank(b.grade)<gradeRank(a.grade)?b:a,points[0]);
@@ -1145,6 +1184,20 @@ function gradeRank(g){return ({A:1,B:2,C:3,D:4,E:5})[g]||9;} function verdictFor
 function maxThunder(levels){ const r={LOW:1,MEDIUM:2,HIGH:3,EXTREME:4}; return levels.sort((a,b)=>r[b]-r[a])[0]||'LOW'; }
 function overallConfidence(vals){ return vals.includes('LOW')?'LOW':vals.includes('MEDIUM')?'MEDIUM':'HIGH'; }
 function num(v,d=1){ return Number.isFinite(v)?v.toFixed(d):'–'; }
+
+
+function renderDaySummaries(points){
+  const section=$('daySummarySection'); const root=$('daySummaryCards');
+  if(!section||!root) return;
+  const groups=new Map();
+  points.forEach(r=>{const d=r.point.date||$('date').value||''; if(!groups.has(d))groups.set(d,[]); groups.get(d).push(r);});
+  root.innerHTML=[...groups.entries()].map(([date,rows],idx)=>{
+    const worst=rows.reduce((a,b)=>gradeRank(b.grade)>gradeRank(a.grade)?b:a,rows[0]);
+    const peaks=rows.filter(x=>x.point.type==='peak').map(x=>x.point.name);
+    const maxW=max(rows.map(x=>x.wind)), maxR=max(rows.map(x=>x.rain));
+    return `<article class="day-summary-card"><div class="day-summary-head"><div><span>DAY ${idx+1}</span><h3>${esc(date)}</h3></div><span class="pill ${worst.grade}">${worst.grade}</span></div><p>${peaks.length?`主な山頂：${esc(peaks.join(' → '))}`:'移動日'}</p><div class="day-summary-metrics"><span>最大風 <b>${num(maxW)}m/s</b></span><span>最大雨 <b>${num(maxR)}mm/h</b></span><span>雷 <b>${maxThunder(rows.map(x=>x.thunder))}</b></span></div><small>この日の最も厳しい地点：${esc(worst.point.name)} / ${worst.point.time}</small></article>`;
+  }).join('');
+}
 
 function renderRouteCards(points){
   $('routeForecastCards').innerHTML=points.map((r,i)=>`<article class="route-forecast-card">

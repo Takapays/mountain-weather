@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mountain Weather Decision V5.2.1 production web server.
+"""Mountain Weather Decision V5.3 production web server.
 
 Serves the static frontend and provides same-origin proxy endpoints for the
 external weather / geocoding / elevation / Overpass services used by app.js.
@@ -21,7 +21,7 @@ from typing import Any
 from flask import Flask, Response, jsonify, request, send_from_directory
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-APP_VERSION = "5.2"
+APP_VERSION = "5.3"
 PORT = int(os.environ.get("PORT", "8000"))
 UPSTREAM_TIMEOUT = int(os.environ.get("UPSTREAM_TIMEOUT", "45"))
 OVERPASS_TIMEOUT = int(os.environ.get("OVERPASS_TIMEOUT", "70"))
@@ -64,7 +64,7 @@ OVERPASS_ENDPOINTS = [
 
 UA = os.environ.get(
     "UPSTREAM_USER_AGENT",
-    "MountainWeatherDecision/5.2",
+    "MountainWeatherDecision/5.3",
 )
 
 app = Flask(__name__, static_folder=None)

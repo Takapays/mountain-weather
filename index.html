@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="地図・山岳POI・複数気象モデルを統合した登山向け天気判断アプリ" />
-  <title>山行判断ツール | V5.2.1</title>
+  <title>山行判断ツール | V5.3</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=5.2" />
+  <link rel="stylesheet" href="styles.css?v=5.3" />
 </head>
 <body>
   <header class="hero">
     <div>
-      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5.2.1</p>
+      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5.3</p>
       <h1>山行判断ツール</h1>
       <p>山に行くか？やめるか？</p>
     </div>
@@ -38,7 +38,7 @@
           <select id="mountainPreset">
             <option value="">山名を選択</option>
             <optgroup label="北アルプス">
-              <option value="槍ヶ岳">槍ヶ岳</option><option value="奥穂高岳">奥穂高岳</option><option value="北穂高岳">北穂高岳</option><option value="前穂高岳">前穂高岳</option><option value="燕岳">燕岳</option><option value="常念岳">常念岳</option><option value="双六岳">双六岳</option><option value="白馬岳">白馬岳</option><option value="唐松岳">唐松岳</option><option value="鹿島槍ヶ岳">鹿島槍ヶ岳</option><option value="剱岳">剱岳</option><option value="立山">立山</option>
+              <option value="槍ヶ岳">槍ヶ岳</option><option value="奥穂高岳">奥穂高岳</option><option value="北穂高岳">北穂高岳</option><option value="前穂高岳">前穂高岳</option><option value="燕岳">燕岳</option><option value="常念岳">常念岳</option><option value="双六岳">双六岳</option><option value="白馬岳">白馬岳</option><option value="唐松岳">唐松岳</option><option value="五竜岳">五竜岳</option><option value="鹿島槍ヶ岳">鹿島槍ヶ岳</option><option value="南岳">南岳</option><option value="剱岳">剱岳</option><option value="立山">立山</option>
             </optgroup>
             <optgroup label="南アルプス">
               <option value="北岳">北岳</option><option value="間ノ岳">間ノ岳</option><option value="甲斐駒ヶ岳">甲斐駒ヶ岳</option><option value="仙丈ヶ岳">仙丈ヶ岳</option>
@@ -79,7 +79,7 @@
         </div>
 
         <div id="waypointWizardRows" class="waypoint-wizard-rows"></div>
-        <button id="addWizardWaypoint" class="ghost wizard-add-waypoint" type="button">＋ 次のポイントを追加</button>
+        <div class="wizard-add-actions"><button id="addWizardWaypoint" class="ghost wizard-add-waypoint" type="button">＋ 次のポイントを追加</button><button id="addWizardSummit" class="secondary wizard-add-waypoint" type="button">＋ 次の山頂を追加（縦走）</button></div><p class="traverse-hint">縦走例：白馬岳 → 唐松岳 → 五竜岳 / 槍ヶ岳 → 大喰岳 → 中岳 → 南岳。宿泊地点を設定するとDAYごとに自動分割します。</p>
 
         <div class="wizard-step-card end-card">
           <div class="wizard-step-no">↓</div>
@@ -173,6 +173,12 @@
       <div id="warningBox" class="warning-box"></div>
     </section>
 
+
+    <section id="daySummarySection" class="panel hidden">
+      <div class="section-title"><div><span>03</span><h2>DAY別の山行判断</h2></div><div class="muted">縦走・宿泊を日ごとに整理</div></div>
+      <div id="daySummaryCards" class="day-summary-grid"></div>
+    </section>
+
     <section id="routeForecastSection" class="panel hidden">
       <div class="section-title"><div><span>03</span><h2>ルート別予報</h2></div><div class="muted">通過時刻 × 地点標高</div></div>
       <div id="routeForecastCards" class="route-forecast-grid"></div>
@@ -197,7 +203,7 @@
 
     <section id="decisionSection" class="decision-grid hidden">
       <article class="panel"><div class="section-title"><div><span>07</span><h2>撤退ライン</h2></div></div><ul id="retreatLines"></ul></article>
-      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5.2.1の読み方</h2></div></div>
+      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5.3の読み方</h2></div></div>
         <p>「登山道ルートを生成」で、登録ポイント間をOpenStreetMapの徒歩・登山道ネットワーク上で探索します。接続できない区間は直線フォールバックとして明示します。</p>
         <p>標高はOpen-Meteo Elevation APIのDEMから取得し、距離・累積標高・推定コースタイムを算出します。宿泊地点は到着後〜翌朝出発までの時間別予報を別途取得し、最低気温・雨・風・雷を専用カードで表示します。</p>
       </article>
@@ -206,6 +212,6 @@
 
   <footer>Weather & elevation via Open-Meteo / POI & trail network via OpenStreetMap & Overpass API. 予報は安全を保証しません。<br><small>サービス改善のため、匿名の操作イベント・処理時間・エラーを記録します。アプリの利用ログには氏名・メールアドレス・IPアドレスを保存しません。</small></footer>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js?v=5.2"></script>
+  <script src="app.js?v=5.3"></script>
 </body>
 </html>

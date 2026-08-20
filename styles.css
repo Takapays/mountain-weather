@@ -109,3 +109,6 @@
 
 /* V5.2 release-only hidden compatibility controls */
 .release-hidden{display:none !important;}
+
+/* V5.3 traverse */
+.wizard-add-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:3px 0 6px}.wizard-add-actions .wizard-add-waypoint{margin:0}.traverse-hint{margin:0 2px 12px;color:var(--muted);font-size:11px;line-height:1.6}.day-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.day-summary-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#0d1513}.day-summary-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.day-summary-head span:first-child{font-size:10px;letter-spacing:.12em;color:var(--accent)}.day-summary-head h3{margin:3px 0 0;font-size:16px}.day-summary-card p{margin:10px 0;color:var(--text);font-size:12px}.day-summary-metrics{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:11px;margin-bottom:8px}.day-summary-card small{color:var(--muted)}@media(max-width:850px){.day-summary-grid{grid-template-columns:1fr}.wizard-add-actions{grid-template-columns:1fr}}
