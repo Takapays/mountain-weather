@@ -131,12 +131,12 @@ const BUILTIN_ROUTE_CATALOG = {
 
 const TRAVERSE_CATALOG = {
   '槍ヶ岳': [
-    {id:'trv-yari-oku',type:'peak',name:'大喰岳',lat:36.3339,lon:137.6469,elevation:3101,sourceMountain:'槍ヶ岳〜南岳縦走'},
-    {id:'trv-yari-naka',type:'peak',name:'中岳',lat:36.3264,lon:137.6498,elevation:3084,sourceMountain:'槍ヶ岳〜南岳縦走'},
-    {id:'trv-yari-minami',type:'peak',name:'南岳',lat:36.3183,lon:137.6519,elevation:3033,sourceMountain:'槍ヶ岳〜南岳縦走'},
-    {id:'trv-yari-minamigoya',type:'hut',name:'南岳小屋',lat:36.3147,lon:137.6502,elevation:2970,sourceMountain:'槍ヶ岳〜南岳縦走'},
-    {id:'trv-yari-kitaho',type:'peak',name:'北穂高岳',lat:36.3028,lon:137.6511,elevation:3106,sourceMountain:'槍ヶ岳〜穂高縦走'},
-    {id:'trv-yari-kitahogoya',type:'hut',name:'北穂高小屋',lat:36.3025,lon:137.6502,elevation:3100,sourceMountain:'槍ヶ岳〜穂高縦走'}
+    {id:'trv-yari-oku',type:'peak',name:'大喰岳',lat:36.3339,lon:137.6469,elevation:3101,sourceMountain:'槍ヶ岳・南岳周辺'},
+    {id:'trv-yari-naka',type:'peak',name:'中岳',lat:36.3264,lon:137.6498,elevation:3084,sourceMountain:'槍ヶ岳・南岳周辺'},
+    {id:'trv-yari-minami',type:'peak',name:'南岳',lat:36.3183,lon:137.6519,elevation:3033,sourceMountain:'槍ヶ岳・南岳周辺'},
+    {id:'trv-yari-minamigoya',type:'hut',name:'南岳小屋',lat:36.3147,lon:137.6502,elevation:2970,sourceMountain:'槍ヶ岳・南岳周辺'},
+    {id:'trv-yari-kitaho',type:'peak',name:'北穂高岳',lat:36.3028,lon:137.6511,elevation:3106,sourceMountain:'槍ヶ岳・穂高周辺'},
+    {id:'trv-yari-kitahogoya',type:'hut',name:'北穂高小屋',lat:36.3025,lon:137.6502,elevation:3100,sourceMountain:'槍ヶ岳・穂高周辺'}
   ],
   '白馬岳': [
     {id:'trv-hakuba-tsugaike',type:'trailhead',name:'栂池自然園',lat:36.7498,lon:137.8618,elevation:1860,sourceMountain:'白馬岳'},
@@ -144,14 +144,14 @@ const TRAVERSE_CATALOG = {
     {id:'trv-hakuba-oike',type:'hut',name:'白馬大池山荘',lat:36.7789,lon:137.7732,elevation:2380,sourceMountain:'白馬岳'},
     {id:'trv-hakuba-oike-camp',type:'camp',name:'白馬大池テント場',lat:36.7789,lon:137.7732,elevation:2380,sourceMountain:'白馬岳'},
     {id:'trv-hakuba-korenge',type:'peak',name:'小蓮華山',lat:36.7715,lon:137.7697,elevation:2766,sourceMountain:'白馬岳'},
-    {id:'trv-hakuba-shakushi',type:'peak',name:'杓子岳',lat:36.7447,lon:137.7530,elevation:2812,sourceMountain:'白馬岳〜唐松岳縦走'},
-    {id:'trv-hakuba-yari',type:'peak',name:'白馬鑓ヶ岳',lat:36.7334,lon:137.7494,elevation:2903,sourceMountain:'白馬岳〜唐松岳縦走'},
-    {id:'trv-hakuba-tengu',type:'hut',name:'天狗山荘',lat:36.7207,lon:137.7475,elevation:2730,sourceMountain:'白馬岳〜唐松岳縦走'},
-    {id:'trv-hakuba-fuki',type:'pass',name:'不帰キレット',lat:36.7045,lon:137.7504,elevation:2400,sourceMountain:'白馬岳〜唐松岳縦走'},
-    {id:'trv-hakuba-karamatsu',type:'peak',name:'唐松岳',lat:36.6874,lon:137.7547,elevation:2696,sourceMountain:'白馬岳〜唐松岳縦走'},
-    {id:'trv-hakuba-karamatsugoya',type:'hut',name:'唐松岳頂上山荘',lat:36.6878,lon:137.7576,elevation:2620,sourceMountain:'白馬岳〜唐松岳縦走'},
-    {id:'trv-hakuba-goryu',type:'peak',name:'五竜岳',lat:36.6584,lon:137.7526,elevation:2814,sourceMountain:'唐松岳〜五竜岳縦走'},
-    {id:'trv-hakuba-goryugoya',type:'hut',name:'五竜山荘',lat:36.6634,lon:137.7547,elevation:2490,sourceMountain:'唐松岳〜五竜岳縦走'},
+    {id:'trv-hakuba-shakushi',type:'peak',name:'杓子岳',lat:36.7447,lon:137.7530,elevation:2812,sourceMountain:'白馬岳・唐松岳周辺'},
+    {id:'trv-hakuba-yari',type:'peak',name:'白馬鑓ヶ岳',lat:36.7334,lon:137.7494,elevation:2903,sourceMountain:'白馬岳・唐松岳周辺'},
+    {id:'trv-hakuba-tengu',type:'hut',name:'天狗山荘',lat:36.7207,lon:137.7475,elevation:2730,sourceMountain:'白馬岳・唐松岳周辺'},
+    {id:'trv-hakuba-fuki',type:'pass',name:'不帰キレット',lat:36.7045,lon:137.7504,elevation:2400,sourceMountain:'白馬岳・唐松岳周辺'},
+    {id:'trv-hakuba-karamatsu',type:'peak',name:'唐松岳',lat:36.6874,lon:137.7547,elevation:2696,sourceMountain:'白馬岳・唐松岳周辺'},
+    {id:'trv-hakuba-karamatsugoya',type:'hut',name:'唐松岳頂上山荘',lat:36.6878,lon:137.7576,elevation:2620,sourceMountain:'白馬岳・唐松岳周辺'},
+    {id:'trv-hakuba-goryu',type:'peak',name:'五竜岳',lat:36.6584,lon:137.7526,elevation:2814,sourceMountain:'唐松岳・五竜岳周辺'},
+    {id:'trv-hakuba-goryugoya',type:'hut',name:'五竜山荘',lat:36.6634,lon:137.7547,elevation:2490,sourceMountain:'唐松岳・五竜岳周辺'},
     {id:'trv-hakuba-alpsdaira',type:'trailhead',name:'アルプス平',lat:36.6817,lon:137.8332,elevation:1515,sourceMountain:'五竜岳'},
     {id:'trv-hakuba-happo',type:'trailhead',name:'八方池山荘',lat:36.7030,lon:137.7893,elevation:1830,sourceMountain:'唐松岳'}
   ],
@@ -242,8 +242,7 @@ function init(){
   $('autoTimeBtn').addEventListener('click', autoFillArrivalTimes);
   $('paceMultiplier')?.addEventListener('change', handlePaceChange);
   $('mountainPreset').addEventListener('change', handleMountainPresetChange);
-  $('addWizardWaypoint').addEventListener('click', () => addWizardWaypoint('hut'));
-  $('addWizardSummit')?.addEventListener('click', () => addWizardWaypoint('peak'));
+  $('addWizardWaypoint').addEventListener('click', () => addWizardWaypoint('peak'));
   $('sameTrailhead').addEventListener('change', () => { setAnalysisReady(false, '下山口設定を変更しました。ルートをもう一度作成してください。'); syncSameTrailhead(); });
   $('startTrailhead').addEventListener('change', () => { setAnalysisReady(false, '登山口を変更しました。ルートをもう一度作成してください。'); syncSameTrailhead(); });
   $('endTrailhead').addEventListener('change', () => setAnalysisReady(false, '下山口を変更しました。ルートをもう一度作成してください。'));
@@ -297,7 +296,7 @@ function stayEligibleCandidate(p){ return p && ['hut','camp'].includes(p.type); 
 
 function candidateOptions(type, selected=''){
   const list=wizardCandidates(type);
-  return '<option value="">候補を選択</option>'+list.slice(0,250).map(p=>`<option value="${esc(p.id)}" ${p.id===selected?'selected':''}>${esc(p.name)}${p.sourceMountain?` ｜ ${esc(p.sourceMountain)}`:''}${p.elevation!==''?` / ${p.elevation}m`:''}</option>`).join('');
+  return '<option value="">候補を選択</option>'+list.slice(0,250).map(p=>`<option value="${esc(p.id)}" ${p.id===selected?'selected':''}>${esc(p.name)}${p.elevation!==''?` / ${p.elevation}m`:''}</option>`).join('');
 }
 function populateTrailheadSelects(){
   const opts=candidateOptions('trailhead');
@@ -312,10 +311,11 @@ function addWizardWaypoint(type='peak', selected='', stay=null){
     <div class="wizard-step-main waypoint-main">
       <label>ポイント種類
         <select class="wizard-waypoint-type">
+          <option value="peak" ${type==='peak'?'selected':''}>山頂</option>
           <option value="hut" ${type==='hut'?'selected':''}>山小屋・避難小屋</option>
           <option value="camp" ${type==='camp'?'selected':''}>テント場</option>
           <option value="pass" ${type==='pass'?'selected':''}>乗越・峠・鞍部</option>
-          <option value="peak" ${type==='peak'?'selected':''}>山頂</option>
+          <option value="trailhead" ${type==='trailhead'?'selected':''}>登山口・下山口</option>
         </select>
       </label>
       <label>ポイント
@@ -356,12 +356,12 @@ function addWizardWaypoint(type='peak', selected='', stay=null){
       stayType.value='hut';
     }
   };
-  typeSel.addEventListener('change',()=>{setAnalysisReady(false, '縦走ポイントを変更しました。ルートをもう一度作成してください。'); pointSel.innerHTML=candidateOptions(typeSel.value); updateStayAvailability(); renumberWizardSteps();});
-  pointSel.addEventListener('change',()=>{setAnalysisReady(false, '縦走ポイントを変更しました。ルートをもう一度作成してください。'); previewWizardPoi(pointSel.value);updateStayAvailability();});
+  typeSel.addEventListener('change',()=>{setAnalysisReady(false, 'ポイントを変更しました。ルートをもう一度作成してください。'); pointSel.innerHTML=candidateOptions(typeSel.value); updateStayAvailability(); renumberWizardSteps();});
+  pointSel.addEventListener('change',()=>{setAnalysisReady(false, 'ポイントを変更しました。ルートをもう一度作成してください。'); previewWizardPoi(pointSel.value);updateStayAvailability();});
   stayToggle.addEventListener('change',()=>{setAnalysisReady(false, '宿泊設定を変更しました。ルートをもう一度作成してください。'); stayFields.classList.toggle('hidden',!stayToggle.checked);});
   stayType.addEventListener('change',()=>setAnalysisReady(false, '宿泊設定を変更しました。ルートをもう一度作成してください。'));
   row.querySelector('.wizard-next-start').addEventListener('change',()=>setAnalysisReady(false, '翌朝の出発時刻を変更しました。ルートをもう一度作成してください。'));
-  row.querySelector('.wizard-remove').addEventListener('click',()=>{setAnalysisReady(false, '縦走ポイントを変更しました。ルートをもう一度作成してください。'); row.remove();renumberWizardSteps();});
+  row.querySelector('.wizard-remove').addEventListener('click',()=>{setAnalysisReady(false, 'ポイントを変更しました。ルートをもう一度作成してください。'); row.remove();renumberWizardSteps();});
   updateStayAvailability();
   renumberWizardSteps();
 }
@@ -645,7 +645,7 @@ async function loadMountainPois(){
     populateTrailheadSelects(); resetWizardRows();
     $('poiMeta').textContent=`${center.name || mountain}: 内蔵候補 ${builtin.length}件 + ${osmNote}。未確定座標はルート作成時に検索します。`;
     renderPoiSelect(); renderPoiMarkers();
-    $('wizardMeta').textContent=`登山口 ${wizardCandidates('trailhead').length} / 小屋 ${wizardCandidates('hut').length} / 乗越・峠 ${wizardCandidates('pass').length} / 山頂 ${wizardCandidates('peak').length}。縦走は「次の山頂を追加」で連続追加できます。`;
+    $('wizardMeta').textContent=`登山口 ${wizardCandidates('trailhead').length} / 山頂 ${wizardCandidates('peak').length} / 小屋 ${wizardCandidates('hut').length} / テント場 ${wizardCandidates('camp').length} / 乗越・峠 ${wizardCandidates('pass').length}。必要な地点を「次のポイントを追加」で順番に登録できます。`;
     setStatus(`${poiCandidates.length} 件の候補を取得しました。出発登山口から順番に選んでください。`);
     setLoadPoiState(`✓ ${poiCandidates.length}件の候補を準備しました。下の「出発する登山口」から選べます。`, 'success');
     logEvent('route_candidates_loaded',{success:true,duration_ms:performance.now()-startedAt,mountain,metadata:{candidate_count:poiCandidates.length,builtin_count:builtin.length,osm_count:osm.length}});

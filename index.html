@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="地図・山岳POI・複数気象モデルを統合した登山向け天気判断アプリ" />
-  <title>山行判断ツール | V5.4</title>
+  <title>山行判断ツール | V5.4.1</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css?v=5.4" />
 </head>
 <body>
   <header class="hero">
     <div>
-      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5.4</p>
+      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5.4.1</p>
       <h1>山行判断ツール</h1>
       <p>山に行くか？やめるか？</p>
     </div>
@@ -79,7 +79,7 @@
         </div>
 
         <div id="waypointWizardRows" class="waypoint-wizard-rows"></div>
-        <div class="wizard-add-actions"><button id="addWizardWaypoint" class="ghost wizard-add-waypoint" type="button">＋ 次のポイントを追加</button><button id="addWizardSummit" class="secondary wizard-add-waypoint" type="button">＋ 次の山頂を追加（縦走）</button></div><p class="traverse-hint">縦走例：白馬岳 → 唐松岳 → 五竜岳 / 槍ヶ岳 → 大喰岳 → 中岳 → 南岳。宿泊地点を設定するとDAYごとに自動分割します。</p>
+        <div class="wizard-add-actions single"><button id="addWizardWaypoint" class="secondary wizard-add-waypoint" type="button">＋ 次のポイントを追加</button></div><p class="traverse-hint">山頂・山小屋・避難小屋・テント場・峠・登山口を、通過する順番に追加してください。宿泊地点を設定するとDAYごとに自動分割します。</p>
 
         <div class="wizard-step-card end-card">
           <div class="wizard-step-no">↓</div>
@@ -176,7 +176,7 @@
 
 
     <section id="daySummarySection" class="panel hidden">
-      <div class="section-title"><div><span>03</span><h2>DAY別の山行判断</h2></div><div class="muted">縦走・宿泊を日ごとに整理</div></div>
+      <div class="section-title"><div><span>03</span><h2>DAY別の山行判断</h2></div><div class="muted">宿泊を含む山行を日ごとに整理</div></div>
       <div id="daySummaryCards" class="day-summary-grid"></div>
     </section>
 
@@ -204,7 +204,7 @@
 
     <section id="decisionSection" class="decision-grid hidden">
       <article class="panel"><div class="section-title"><div><span>07</span><h2>撤退ライン</h2></div></div><ul id="retreatLines"></ul></article>
-      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5.4の読み方</h2></div></div>
+      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5.4.1の読み方</h2></div></div>
         <p>「登山道ルートを生成」で、登録ポイント間をOpenStreetMapの徒歩・登山道ネットワーク上で探索します。接続できない区間は直線フォールバックとして明示します。</p>
         <p>標高はOpen-Meteo Elevation APIのDEMから取得し、距離・累積標高・推定コースタイムを算出します。宿泊地点は到着後〜翌朝出発までの時間別予報を別途取得し、最低気温・雨・風・雷を専用カードで表示します。</p>
       </article>
