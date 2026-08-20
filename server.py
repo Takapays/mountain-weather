@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mountain Weather Decision V5.4 production web server.
+"""Mountain Weather Decision V5.5 production web server.
 
 Serves the static frontend and provides same-origin proxy endpoints for the
 external weather / geocoding / elevation / Overpass services used by app.js.
@@ -8,7 +8,10 @@ Designed to run locally with `python server.py` and in production with Gunicorn.
 
 from __future__ import annotations
 
+import gzip
+import heapq
 import json
+import math
 import os
 import threading
 import time
@@ -21,7 +24,7 @@ from typing import Any
 from flask import Flask, Response, jsonify, request, send_from_directory
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-APP_VERSION = "5.4"
+APP_VERSION = "5.5"
 PORT = int(os.environ.get("PORT", "8000"))
 UPSTREAM_TIMEOUT = int(os.environ.get("UPSTREAM_TIMEOUT", "45"))
 OVERPASS_TIMEOUT = int(os.environ.get("OVERPASS_TIMEOUT", "70"))
@@ -65,7 +68,7 @@ OVERPASS_ENDPOINTS = [
 
 UA = os.environ.get(
     "UPSTREAM_USER_AGENT",
-    "MountainWeatherDecision/5.4",
+    "MountainWeatherDecision/5.5",
 )
 
 app = Flask(__name__, static_folder=None)
@@ -73,6 +76,140 @@ app.config["MAX_CONTENT_LENGTH"] = MAX_OVERPASS_BYTES
 
 _cache: "OrderedDict[str, tuple[float, int, str, bytes]]" = OrderedDict()
 _cache_lock = threading.Lock()
+
+TRAIL_DATA_DIR = os.path.join(BASE, "trail_data")
+TRAIL_GRAPH_CACHE_MAX = int(os.environ.get("TRAIL_GRAPH_CACHE_MAX", "2"))
+_trail_graph_cache: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
+_trail_graph_lock = threading.Lock()
+
+
+def _load_trail_manifest() -> dict[str, Any]:
+    path = os.path.join(TRAIL_DATA_DIR, "manifest.json")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"schema": 1, "regions": []}
+
+
+def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 6371000.0
+    p = math.pi / 180.0
+    dlat = (lat2 - lat1) * p
+    dlon = (lon2 - lon1) * p
+    x = math.sin(dlat / 2) ** 2 + math.cos(lat1 * p) * math.cos(lat2 * p) * math.sin(dlon / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(x))
+
+
+def _load_trail_graph(region: dict[str, Any]) -> dict[str, Any] | None:
+    rid = str(region.get("id") or "")
+    if not rid or not region.get("ready"):
+        return None
+    with _trail_graph_lock:
+        if rid in _trail_graph_cache:
+            _trail_graph_cache.move_to_end(rid)
+            return _trail_graph_cache[rid]
+    filename = os.path.basename(str(region.get("file") or f"{rid}.json.gz"))
+    path = os.path.join(TRAIL_DATA_DIR, filename)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with gzip.open(path, "rt", encoding="utf-8") as f:
+            raw = json.load(f)
+        nodes = {int(row[0]): (float(row[1]), float(row[2])) for row in raw.get("nodes", [])}
+        adj: dict[int, list[tuple[int, float]]] = {}
+        for row in raw.get("edges", []):
+            a, b, w = int(row[0]), int(row[1]), float(row[2])
+            if a not in nodes or b not in nodes:
+                continue
+            adj.setdefault(a, []).append((b, w))
+            adj.setdefault(b, []).append((a, w))
+        graph = {"nodes": nodes, "adj": adj, "region": rid, "name": region.get("name") or rid}
+        with _trail_graph_lock:
+            _trail_graph_cache[rid] = graph
+            _trail_graph_cache.move_to_end(rid)
+            while len(_trail_graph_cache) > max(1, TRAIL_GRAPH_CACHE_MAX):
+                _trail_graph_cache.popitem(last=False)
+        return graph
+    except Exception as exc:
+        print(f"[trail-graph-load-error] {rid}: {exc}", flush=True)
+        return None
+
+
+def _nearest_trail_node(graph: dict[str, Any], lat: float, lon: float) -> tuple[int, float] | None:
+    best_id = None
+    best_dist = float("inf")
+    for nid, (nlat, nlon) in graph["nodes"].items():
+        d = _haversine(lat, lon, nlat, nlon)
+        if d < best_dist:
+            best_id, best_dist = nid, d
+    return (best_id, best_dist) if best_id is not None else None
+
+
+def _astar_trail(graph: dict[str, Any], start: int, goal: int) -> list[int] | None:
+    nodes = graph["nodes"]
+    adj = graph["adj"]
+    if start == goal:
+        return [start]
+    goal_lat, goal_lon = nodes[goal]
+    heap: list[tuple[float, int]] = [(0.0, start)]
+    g = {start: 0.0}
+    came: dict[int, int] = {}
+    closed: set[int] = set()
+    while heap:
+        _, cur = heapq.heappop(heap)
+        if cur in closed:
+            continue
+        if cur == goal:
+            path = [cur]
+            while cur in came:
+                cur = came[cur]
+                path.append(cur)
+            path.reverse()
+            return path
+        closed.add(cur)
+        base = g[cur]
+        for nxt, weight in adj.get(cur, []):
+            tentative = base + weight
+            if tentative >= g.get(nxt, float("inf")):
+                continue
+            came[nxt] = cur
+            g[nxt] = tentative
+            lat, lon = nodes[nxt]
+            h = _haversine(lat, lon, goal_lat, goal_lon)
+            heapq.heappush(heap, (tentative + h, nxt))
+    return None
+
+
+def _simplify_trail(coords: list[dict[str, float]], min_m: float = 55.0) -> list[dict[str, float]]:
+    if len(coords) <= 2:
+        return coords
+    out = [coords[0]]
+    last = coords[0]
+    for p in coords[1:-1]:
+        if _haversine(last["lat"], last["lon"], p["lat"], p["lon"]) >= min_m:
+            out.append(p)
+            last = p
+    out.append(coords[-1])
+    return out
+
+
+def _candidate_trail_regions(lat1: float, lon1: float, lat2: float, lon2: float) -> list[dict[str, Any]]:
+    manifest = _load_trail_manifest()
+    candidates = []
+    for region in manifest.get("regions", []):
+        if not region.get("ready"):
+            continue
+        bbox = region.get("bbox") or []
+        if len(bbox) != 4:
+            continue
+        south, west, north, east = map(float, bbox)
+        pad = 0.02
+        inside1 = south-pad <= lat1 <= north+pad and west-pad <= lon1 <= east+pad
+        inside2 = south-pad <= lat2 <= north+pad and west-pad <= lon2 <= east+pad
+        if inside1 and inside2:
+            candidates.append(region)
+    return candidates
 
 
 
@@ -215,6 +352,7 @@ def health():
         overpass_endpoints=len(OVERPASS_ENDPOINTS),
         usage_logging=True,
         supabase_configured=bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY),
+        trail_regions_ready=sum(1 for r in _load_trail_manifest().get("regions", []) if r.get("ready")),
     )
 
 
@@ -249,6 +387,45 @@ def usage_event():
         sink="supabase" if stored else "render-log",
         storage_error=storage_error if (storage_error and os.environ.get("APP_ENV") != "production") else None,
     ), 202
+
+
+@app.get("/api/trail-regions")
+def trail_regions():
+    manifest = _load_trail_manifest()
+    return jsonify(manifest)
+
+
+@app.get("/api/trail-route")
+def trail_route():
+    try:
+        lat1 = float(request.args["lat1"]); lon1 = float(request.args["lon1"])
+        lat2 = float(request.args["lat2"]); lon2 = float(request.args["lon2"])
+    except Exception:
+        return jsonify(error="lat1/lon1/lat2/lon2 are required"), 400
+    for region in _candidate_trail_regions(lat1, lon1, lat2, lon2):
+        graph = _load_trail_graph(region)
+        if not graph or not graph["nodes"]:
+            continue
+        start = _nearest_trail_node(graph, lat1, lon1)
+        goal = _nearest_trail_node(graph, lat2, lon2)
+        if not start or not goal:
+            continue
+        if start[1] > 1800 or goal[1] > 1800:
+            continue
+        ids = _astar_trail(graph, start[0], goal[0])
+        if not ids or len(ids) < 2:
+            continue
+        coords = [{"lat": lat1, "lon": lon1}]
+        coords.extend({"lat": graph["nodes"][nid][0], "lon": graph["nodes"][nid][1]} for nid in ids)
+        coords.append({"lat": lat2, "lon": lon2})
+        coords = _simplify_trail(coords)
+        response = jsonify(ok=True, source="preloaded-osm", region=graph["region"], region_name=graph["name"], coords=coords, start_gap_m=round(start[1]), end_gap_m=round(goal[1]))
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        response.headers["X-Trail-Source"] = "PRELOADED"
+        return response
+    response = jsonify(ok=False, error="preloaded route not found")
+    response.headers["X-Trail-Source"] = "MISS"
+    return response, 404
 
 
 @app.get("/api/proxy")

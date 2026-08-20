@@ -191,8 +191,8 @@ let routeSummary = null;
 let overnightResults = [];
 let routeAnalysisReady = false;
 
-const APP_VERSION = '5.4';
-const ROUTE_CACHE_VERSION = 'route-v54a';
+const APP_VERSION = '5.5';
+const ROUTE_CACHE_VERSION = 'route-v55a';
 const ROUTE_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const ROUTE_CACHE_MAX_ITEMS = 120;
 const USAGE_SESSION_ID = (globalThis.crypto?.randomUUID?.() || `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`);
@@ -882,7 +882,7 @@ async function buildTrailRoute(options={}){
     if(points.length<2) throw new Error('ルート地点を2地点以上登録してください。');
     for(const p of points) if(!Number.isFinite(p.lat)||!Number.isFinite(p.lon)) throw new Error(`${p.name||p.index+'番目'} の位置情報を取得できませんでした。`);
     routeRecalcState(`① 登山道を探索中… 0/${points.length-1}`,'loading');
-    setStatus(`OpenStreetMapの登山道から ${points.length-1} 区間を探索しています…`);
+    setStatus(`内蔵登山道データを優先して ${points.length-1} 区間を探索しています…`);
     const segments=[];
     let cacheHits=0;
     for(let i=0;i<points.length-1;i++){
@@ -895,11 +895,15 @@ async function buildTrailRoute(options={}){
         cacheHits++;
         const hitMsg=`✓ 保存済みルートを使用：${points[i].name} → ${points[i+1].name}（${cacheHits}区間）`;
         setStatus(hitMsg); routeRecalcState(hitMsg,'loading'); if(wizard) setWizardRouteState(hitMsg,'loading');
+      }else if(seg.source==='preloaded-osm'){
+        preloadedHits++;
+        const hitMsg=`✓ 内蔵登山道を使用：${points[i].name} → ${points[i+1].name}${seg.preloadedRegion?` / ${seg.preloadedRegion}`:''}`;
+        setStatus(hitMsg); routeRecalcState(hitMsg,'loading'); if(wizard) setWizardRouteState(hitMsg,'loading');
       }
       segments.push(seg);
     }
-    setStatus(cacheHits===segments.length ? '全区間で保存済みルートを使用。コースタイムを更新しています…' : `ルート標高を取得して計算しています…（保存済み ${cacheHits}/${segments.length}区間）`);
-    if(wizard) setWizardRouteState(`④ ルート標高・距離・累積標高を計算しています…（保存済み ${cacheHits}/${segments.length}区間）`,'loading');
+    setStatus(cacheHits===segments.length ? '全区間で保存済みルートを使用。コースタイムを更新しています…' : `ルート標高を取得して計算しています…（保存済み ${cacheHits} / 内蔵 ${preloadedHits} / 全${segments.length}区間）`);
+    if(wizard) setWizardRouteState(`④ ルート標高・距離・累積標高を計算しています…（保存済み ${cacheHits} / 内蔵 ${preloadedHits} / 全${segments.length}区間）`,'loading');
     await addElevationAndStats(segments);
     segments.forEach((seg,i)=>{ if(!seg.routeCacheHit) writeRouteSegmentCache(points[i],points[i+1],seg); });
     syncRoutePointElevationsFromSegments(segments);
@@ -911,8 +915,8 @@ async function buildTrailRoute(options={}){
     $('autoTimeBtn').disabled=false;
     routeRecalcState('① 完了。続けて②「到達時刻を再計算」を押せます。','success');
     const fallback=segments.filter(x=>x.fallback).length;
-    setStatus(`V5.4ルート生成完了：${(routeSummary.distance/1000).toFixed(2)}km / 登り${Math.round(routeSummary.ascent)}m / 推定${formatDuration(routeSummary.minutes)} / 保存済みルート ${cacheHits}/${segments.length}区間${fallback?`。${fallback}区間は登山道接続が見つからず直線フォールバックです。`:''}`);
-    logEvent('trail_route_calculated',{success:true,duration_ms:performance.now()-startedAt,route_points:points.length,metadata:{segments:segments.length,route_cache_hits:cacheHits,fallback_segments:fallback,distance_km:Number((routeSummary.distance/1000).toFixed(2)),ascent_m:Math.round(routeSummary.ascent),descent_m:Math.round(routeSummary.descent),course_minutes:Math.round(routeSummary.minutes),pace_multiplier:paceMultiplier()}});
+    setStatus(`V5.5ルート生成完了：${(routeSummary.distance/1000).toFixed(2)}km / 登り${Math.round(routeSummary.ascent)}m / 推定${formatDuration(routeSummary.minutes)} / 保存済み ${cacheHits} / 内蔵登山道 ${preloadedHits} / 全${segments.length}区間${fallback?`。${fallback}区間は登山道接続が見つからず直線フォールバックです。`:''}`);
+    logEvent('trail_route_calculated',{success:true,duration_ms:performance.now()-startedAt,route_points:points.length,metadata:{segments:segments.length,route_cache_hits:cacheHits,preloaded_route_hits:preloadedHits,fallback_segments:fallback,distance_km:Number((routeSummary.distance/1000).toFixed(2)),ascent_m:Math.round(routeSummary.ascent),descent_m:Math.round(routeSummary.descent),course_minutes:Math.round(routeSummary.minutes),pace_multiplier:paceMultiplier()}});
     return true;
   }catch(e){
     const msg=e.message||String(e);
@@ -924,9 +928,28 @@ async function buildTrailRoute(options={}){
   }finally{$('buildTrailBtn').disabled=false;}
 }
 
+async function fetchPreloadedTrailSegment(a,b){
+  const qs=new URLSearchParams({lat1:a.lat,lon1:a.lon,lat2:b.lat,lon2:b.lon});
+  try{
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),12000);
+    const r=await fetch('/api/trail-route?'+qs.toString(),{signal:controller.signal,cache:'no-store'});
+    clearTimeout(timer);
+    if(!r.ok) return null;
+    const j=await r.json();
+    if(!j?.ok||!Array.isArray(j.coords)||j.coords.length<2) return null;
+    const coords=j.coords.map(p=>({lat:Number(p.lat),lon:Number(p.lon)})).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+    if(coords.length<2) return null;
+    return {fromName:a.name,toName:b.name,coords,fallback:false,distance:polylineDistance(coords),ascent:0,descent:0,minutes:0,routeCacheHit:false,source:'preloaded-osm',preloadedRegion:j.region_name||j.region||''};
+  }catch(_){ return null; }
+}
+
 async function routeTrailSegment(a,b){
   const cached=readRouteSegmentCache(a,b);
   if(cached){ cached.minutes=estimateCourseMinutes(cached.distance,cached.ascent,cached.descent); return cached; }
+
+  const preloaded=await fetchPreloadedTrailSegment(a,b);
+  if(preloaded) return preloaded;
 
   const direct=haversine(a.lat,a.lon,b.lat,b.lon);
   const latScale=Math.max(.4,Math.cos((a.lat+b.lat)/2*Math.PI/180));

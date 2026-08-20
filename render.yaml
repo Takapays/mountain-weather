@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     region: singapore
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python build_trail_graphs.py
     startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 server:app
     healthCheckPath: /api/health
     autoDeployTrigger: commit
@@ -17,6 +17,10 @@ services:
         value: "70"
       - key: CACHE_TTL
         value: "120"
+      - key: TRAIL_GRAPH_CACHE_MAX
+        value: "2"
+      - key: TRAIL_BUILD_TIMEOUT
+        value: "180"
 
       - key: USAGE_LOG_STDOUT
         value: "1"
