@@ -189,8 +189,9 @@ let trailSegments = [];
 let routeProfile = [];
 let routeSummary = null;
 let overnightResults = [];
+let routeAnalysisReady = false;
 
-const APP_VERSION = '5.3';
+const APP_VERSION = '5.3.1';
 const USAGE_SESSION_ID = (globalThis.crypto?.randomUUID?.() || `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`);
 
 function logEvent(eventName, details={}){
@@ -221,6 +222,8 @@ init();
 
 function init(){
   $('date').value = new Date(Date.now() + 86400000).toISOString().slice(0,10);
+  setAnalysisReady(false, '先に「この順番でルートを作成」を完了してください。');
+  $('date').addEventListener('change', () => setAnalysisReady(false, '登山日を変更しました。ルートをもう一度作成してください。'));
   $('addPointBtn').addEventListener('click', () => addRoutePoint({type:'manual'}));
   $('analyzeBtn').addEventListener('click', analyze);
   $('fillExample').addEventListener('click', fillExample);
@@ -238,16 +241,33 @@ function init(){
   $('mountainPreset').addEventListener('change', handleMountainPresetChange);
   $('addWizardWaypoint').addEventListener('click', () => addWizardWaypoint('hut'));
   $('addWizardSummit')?.addEventListener('click', () => addWizardWaypoint('peak'));
-  $('sameTrailhead').addEventListener('change', syncSameTrailhead);
-  $('startTrailhead').addEventListener('change', syncSameTrailhead);
+  $('sameTrailhead').addEventListener('change', () => { setAnalysisReady(false, '下山口設定を変更しました。ルートをもう一度作成してください。'); syncSameTrailhead(); });
+  $('startTrailhead').addEventListener('change', () => { setAnalysisReady(false, '登山口を変更しました。ルートをもう一度作成してください。'); syncSameTrailhead(); });
+  $('endTrailhead').addEventListener('change', () => setAnalysisReady(false, '下山口を変更しました。ルートをもう一度作成してください。'));
   $('createWizardRoute').addEventListener('click', createRouteFromWizard);
   $('wizardStartTime').addEventListener('change', () => {
     const first=$('routePoints').querySelector('.point-time'); if(first) first.value=$('wizardStartTime').value;
+    setAnalysisReady(false, '出発時刻を変更しました。ルートをもう一度作成してください。');
   });
   initMap();
   logEvent('page_view',{success:true,metadata:{viewport_width:window.innerWidth,viewport_height:window.innerHeight}});
 }
 
+
+function setAnalysisReady(ready, message=''){
+  routeAnalysisReady=Boolean(ready);
+  const btn=$('analyzeBtn');
+  if(btn){
+    btn.disabled=!routeAnalysisReady;
+    btn.setAttribute('aria-disabled', routeAnalysisReady?'false':'true');
+    btn.title=routeAnalysisReady ? 'ルート全体の天気を分析します' : (message || 'ルート作成完了後に分析できます');
+  }
+  const hint=$('analysisReadyHint');
+  if(hint){
+    hint.textContent=routeAnalysisReady ? '✓ ルート計算・到達時刻の準備が完了しました。分析できます。' : (message || 'ルート作成が完了すると分析できるようになります。');
+    hint.className=`analysis-ready-hint ${routeAnalysisReady?'ready':'locked'}`;
+  }
+}
 
 function currentMountainName(){
   const preset=$('mountainPreset').value;
@@ -256,6 +276,7 @@ function currentMountainName(){
 }
 
 async function handleMountainPresetChange(){
+  setAnalysisReady(false, '山を変更しました。候補を読み込み、ルートを作成してください。');
   const v=$('mountainPreset').value;
   const custom=v==='__other__';
   $('customMountainWrap').classList.toggle('hidden', !custom);
@@ -332,10 +353,12 @@ function addWizardWaypoint(type='peak', selected='', stay=null){
       stayType.value='hut';
     }
   };
-  typeSel.addEventListener('change',()=>{pointSel.innerHTML=candidateOptions(typeSel.value); updateStayAvailability(); renumberWizardSteps();});
-  pointSel.addEventListener('change',()=>{previewWizardPoi(pointSel.value);updateStayAvailability();});
-  stayToggle.addEventListener('change',()=>stayFields.classList.toggle('hidden',!stayToggle.checked));
-  row.querySelector('.wizard-remove').addEventListener('click',()=>{row.remove();renumberWizardSteps();});
+  typeSel.addEventListener('change',()=>{setAnalysisReady(false, '縦走ポイントを変更しました。ルートをもう一度作成してください。'); pointSel.innerHTML=candidateOptions(typeSel.value); updateStayAvailability(); renumberWizardSteps();});
+  pointSel.addEventListener('change',()=>{setAnalysisReady(false, '縦走ポイントを変更しました。ルートをもう一度作成してください。'); previewWizardPoi(pointSel.value);updateStayAvailability();});
+  stayToggle.addEventListener('change',()=>{setAnalysisReady(false, '宿泊設定を変更しました。ルートをもう一度作成してください。'); stayFields.classList.toggle('hidden',!stayToggle.checked);});
+  stayType.addEventListener('change',()=>setAnalysisReady(false, '宿泊設定を変更しました。ルートをもう一度作成してください。'));
+  row.querySelector('.wizard-next-start').addEventListener('change',()=>setAnalysisReady(false, '翌朝の出発時刻を変更しました。ルートをもう一度作成してください。'));
+  row.querySelector('.wizard-remove').addEventListener('click',()=>{setAnalysisReady(false, '縦走ポイントを変更しました。ルートをもう一度作成してください。'); row.remove();renumberWizardSteps();});
   updateStayAvailability();
   renumberWizardSteps();
 }
@@ -395,6 +418,7 @@ async function ensureWizardPointElevations(points){
   missing.forEach((p,i)=>p.elevation=Math.round(elev[i]));
 }
 async function createRouteFromWizard(){
+  setAnalysisReady(false, 'ルートを計算中です。完了するまでお待ちください。');
   const startedAt=performance.now();
   let selectedCount=0, stayCount=0;
   try{
@@ -418,10 +442,12 @@ async function createRouteFromWizard(){
 
     setWizardRouteState('⑤ 到達時刻を計算しています…','loading');
     if(trailSegments.length) autoFillArrivalTimes();
+    setAnalysisReady(true);
     const nights=selected.filter(p=>p.stay?.enabled).length;
     setWizardRouteState(`✓ ルート完成${nights?`（${nights}泊）`:''}：${selected.map(p=>p.name).join(' → ')}`,'success');
     logEvent('route_created',{success:true,duration_ms:performance.now()-startedAt,route_points:selected.length,stay_count:nights,metadata:{pace_multiplier:paceMultiplier()}});
   }catch(e){
+    setAnalysisReady(false, 'ルート作成に失敗しました。内容を確認してもう一度作成してください。');
     const msg=e.message||String(e);
     setWizardRouteState(`エラー：${msg}`,'error');
     setStatus(msg,true);
@@ -724,6 +750,7 @@ function validatePoints(points){
 }
 
 function invalidateTrailRoute(){
+  setAnalysisReady(false, 'ルート内容が変更されました。「この順番でルートを作成」をもう一度実行してください。');
   trailRoute=null; trailSegments=[]; routeProfile=[]; routeSummary=null;
   const auto=$('autoTimeBtn'); if(auto) auto.disabled=true;
   $('routeMetrics')?.classList.add('hidden'); $('segmentTableWrap')?.classList.add('hidden');
@@ -793,6 +820,7 @@ async function hydrateMissingCoordinates(){
 }
 
 async function buildTrailRoute(options={}){
+  setAnalysisReady(false, '登山道・コースタイムを計算中です。完了するまでお待ちください。');
   const wizard=Boolean(options.wizard);
   const startedAt=performance.now();
   let pointCount=0;
@@ -986,7 +1014,11 @@ async function analyze(){
   const startedAt=performance.now();
   let pointCount=0, stayCount=0;
   try{
+    if(!routeAnalysisReady || !routeSummary || trailSegments.length < 1){
+      throw new Error('先に「この順番でルートを作成」を最後まで完了してください。登山道・コースタイム・到達時刻の計算完了後に分析できます。');
+    }
     const points=collectPoints(); validatePoints(points);
+    if(trailSegments.length !== points.length-1) throw new Error('ルート計算結果が現在の地点数と一致しません。ルートをもう一度作成してください。');
     pointCount=points.length;
     $('analyzeBtn').disabled=true; setStatus(`ルート ${points.length} 地点 × ${providers.length} モデルを取得しています…`);
     const results=[];
@@ -1007,7 +1039,7 @@ async function analyze(){
     setStatus(`分析完了：${points.length} 地点 × 最大 ${providers.length} モデル${stayMsg}。`);
     logEvent('weather_analysis',{success:true,duration_ms:performance.now()-startedAt,route_points:points.length,stay_count:stayPoints.length,metadata:{provider_count:providers.length}});
   }catch(e){ const msg=e.message||String(e); setStatus(msg,true); logEvent('weather_analysis',{success:false,duration_ms:performance.now()-startedAt,route_points:pointCount,stay_count:stayCount,error_message:msg}); }
-  finally{$('analyzeBtn').disabled=false;}
+  finally{$('analyzeBtn').disabled=!routeAnalysisReady;}
 }
 
 async function analyzePoint(point){

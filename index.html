@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="地図・山岳POI・複数気象モデルを統合した登山向け天気判断アプリ" />
-  <title>山行判断ツール | V5.3</title>
+  <title>山行判断ツール | V5.3.1.1</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css?v=5.3" />
 </head>
 <body>
   <header class="hero">
     <div>
-      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5.3</p>
+      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5.3.1</p>
       <h1>山行判断ツール</h1>
       <p>山に行くか？やめるか？</p>
     </div>
@@ -154,7 +154,8 @@
         <div class="section-subhead"><b>区間サマリー</b><span>OSM登山道 + 90m DEMベース</span></div>
         <div class="table-wrap"><table class="compact-table"><thead><tr><th>区間</th><th>距離</th><th>登り</th><th>下り</th><th>推定時間</th><th>状態</th></tr></thead><tbody id="segmentBody"></tbody></table></div>
       </div>
-      <div class="actions"><button id="analyzeBtn" class="primary">ルート全体を分析</button></div>
+      <div class="actions"><button id="analyzeBtn" class="primary" disabled aria-disabled="true">ルート全体を分析</button></div>
+      <p id="analysisReadyHint" class="analysis-ready-hint locked">先に「この順番でルートを作成」を完了してください。</p>
       <p class="fineprint">※ 周辺ポイントは OpenStreetMap の公開データから取得します。登録漏れ・名称揺れ・位置誤差があり得ます。重要な山行では公式地図・登山地図で必ず確認してください。</p>
     </section>
 
@@ -203,7 +204,7 @@
 
     <section id="decisionSection" class="decision-grid hidden">
       <article class="panel"><div class="section-title"><div><span>07</span><h2>撤退ライン</h2></div></div><ul id="retreatLines"></ul></article>
-      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5.3の読み方</h2></div></div>
+      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5.3.1の読み方</h2></div></div>
         <p>「登山道ルートを生成」で、登録ポイント間をOpenStreetMapの徒歩・登山道ネットワーク上で探索します。接続できない区間は直線フォールバックとして明示します。</p>
         <p>標高はOpen-Meteo Elevation APIのDEMから取得し、距離・累積標高・推定コースタイムを算出します。宿泊地点は到着後〜翌朝出発までの時間別予報を別途取得し、最低気温・雨・風・雷を専用カードで表示します。</p>
       </article>
