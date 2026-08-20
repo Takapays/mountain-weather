@@ -191,7 +191,7 @@ let routeSummary = null;
 let overnightResults = [];
 let routeAnalysisReady = false;
 
-const APP_VERSION = '5.5';
+const APP_VERSION = '5.5.1';
 const ROUTE_CACHE_VERSION = 'route-v55a';
 const ROUTE_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const ROUTE_CACHE_MAX_ITEMS = 120;
@@ -885,6 +885,7 @@ async function buildTrailRoute(options={}){
     setStatus(`内蔵登山道データを優先して ${points.length-1} 区間を探索しています…`);
     const segments=[];
     let cacheHits=0;
+    let preloadedHits=0;
     for(let i=0;i<points.length-1;i++){
       const msg=`④ ${i+1}/${points.length-1} ${points[i].name} → ${points[i+1].name} の登山道を探索中…`;
       setStatus(msg);
@@ -915,7 +916,7 @@ async function buildTrailRoute(options={}){
     $('autoTimeBtn').disabled=false;
     routeRecalcState('① 完了。続けて②「到達時刻を再計算」を押せます。','success');
     const fallback=segments.filter(x=>x.fallback).length;
-    setStatus(`V5.5ルート生成完了：${(routeSummary.distance/1000).toFixed(2)}km / 登り${Math.round(routeSummary.ascent)}m / 推定${formatDuration(routeSummary.minutes)} / 保存済み ${cacheHits} / 内蔵登山道 ${preloadedHits} / 全${segments.length}区間${fallback?`。${fallback}区間は登山道接続が見つからず直線フォールバックです。`:''}`);
+    setStatus(`V5.5.1ルート生成完了：${(routeSummary.distance/1000).toFixed(2)}km / 登り${Math.round(routeSummary.ascent)}m / 推定${formatDuration(routeSummary.minutes)} / 保存済み ${cacheHits} / 内蔵登山道 ${preloadedHits} / 全${segments.length}区間${fallback?`。${fallback}区間は登山道接続が見つからず直線フォールバックです。`:''}`);
     logEvent('trail_route_calculated',{success:true,duration_ms:performance.now()-startedAt,route_points:points.length,metadata:{segments:segments.length,route_cache_hits:cacheHits,preloaded_route_hits:preloadedHits,fallback_segments:fallback,distance_km:Number((routeSummary.distance/1000).toFixed(2)),ascent_m:Math.round(routeSummary.ascent),descent_m:Math.round(routeSummary.descent),course_minutes:Math.round(routeSummary.minutes),pace_multiplier:paceMultiplier()}});
     return true;
   }catch(e){

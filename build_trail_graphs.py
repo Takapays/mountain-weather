@@ -28,7 +28,7 @@ ENDPOINTS = [x.strip() for x in os.environ.get(
 TIMEOUT = int(os.environ.get("TRAIL_BUILD_TIMEOUT", "180"))
 RETRIES = int(os.environ.get("TRAIL_BUILD_RETRIES", "2"))
 STRICT = os.environ.get("STRICT_TRAIL_BUILD", "0").lower() in {"1","true","yes"}
-UA = os.environ.get("UPSTREAM_USER_AGENT", "MountainWeatherDecision/5.5 trail-builder")
+UA = os.environ.get("UPSTREAM_USER_AGENT", "MountainWeatherDecision/5.5.1 trail-builder")
 
 # Broad mountain-range boxes, intentionally split so runtime loads only one graph.
 # [south, west, north, east]
@@ -128,7 +128,7 @@ def main():
             print(f"  WARN failed: {exc}",flush=True)
             results.append({**r,"file":f"{r['id']}.json.gz","nodes":0,"edges":0,"bytes":0,"ready":False})
     manifest={
-        "schema":1,"app_version":"5.5","generated_at":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
+        "schema":1,"app_version":"5.5.1","generated_at":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
         "source":"OpenStreetMap","license":"ODbL","attribution":"© OpenStreetMap contributors",
         "regions":results,
     }
