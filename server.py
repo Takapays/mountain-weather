@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mountain Weather Decision V5.3 production web server.
+"""Mountain Weather Decision V5.4 production web server.
 
 Serves the static frontend and provides same-origin proxy endpoints for the
 external weather / geocoding / elevation / Overpass services used by app.js.
@@ -21,11 +21,12 @@ from typing import Any
 from flask import Flask, Response, jsonify, request, send_from_directory
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-APP_VERSION = "5.3"
+APP_VERSION = "5.4"
 PORT = int(os.environ.get("PORT", "8000"))
 UPSTREAM_TIMEOUT = int(os.environ.get("UPSTREAM_TIMEOUT", "45"))
 OVERPASS_TIMEOUT = int(os.environ.get("OVERPASS_TIMEOUT", "70"))
 CACHE_TTL = int(os.environ.get("CACHE_TTL", "120"))
+OVERPASS_CACHE_TTL = int(os.environ.get("OVERPASS_CACHE_TTL", "86400"))
 CACHE_MAX_ITEMS = int(os.environ.get("CACHE_MAX_ITEMS", "256"))
 MAX_OVERPASS_BYTES = int(os.environ.get("MAX_OVERPASS_BYTES", str(512 * 1024)))
 
@@ -64,7 +65,7 @@ OVERPASS_ENDPOINTS = [
 
 UA = os.environ.get(
     "UPSTREAM_USER_AGENT",
-    "MountainWeatherDecision/5.3",
+    "MountainWeatherDecision/5.4",
 )
 
 app = Flask(__name__, static_folder=None)
@@ -162,11 +163,12 @@ def _cache_get(key: str):
         return status, ctype, body
 
 
-def _cache_put(key: str, status: int, ctype: str, body: bytes):
-    if CACHE_TTL <= 0 or status != 200:
+def _cache_put(key: str, status: int, ctype: str, body: bytes, ttl: int | None = None):
+    cache_ttl = CACHE_TTL if ttl is None else ttl
+    if cache_ttl <= 0 or status != 200:
         return
     with _cache_lock:
-        _cache[key] = (time.time() + CACHE_TTL, status, ctype, body)
+        _cache[key] = (time.time() + cache_ttl, status, ctype, body)
         _cache.move_to_end(key)
         while len(_cache) > CACHE_MAX_ITEMS:
             _cache.popitem(last=False)
@@ -282,15 +284,19 @@ def overpass():
     cached = _cache_get(cache_key)
     if cached:
         status, ctype, body = cached
-        return _bytes_response(status, ctype, body, cache_control="public, max-age=60")
+        response = _bytes_response(status, ctype, body, cache_control="public, max-age=300")
+        response.headers["X-Route-Cache"] = "HIT"
+        return response
 
     errors: list[str] = []
     for endpoint in OVERPASS_ENDPOINTS:
         try:
             status, ctype, body = _request_overpass(endpoint, query)
             if status == 200:
-                _cache_put(cache_key, status, ctype, body)
-                return _bytes_response(status, ctype, body, cache_control="public, max-age=60")
+                _cache_put(cache_key, status, ctype, body, ttl=OVERPASS_CACHE_TTL)
+                response = _bytes_response(status, ctype, body, cache_control="public, max-age=300")
+                response.headers["X-Route-Cache"] = "MISS"
+                return response
             errors.append(f"{endpoint}: HTTP {status}")
         except Exception as exc:
             errors.append(f"{endpoint}: {exc}")
