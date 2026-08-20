@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="地図・山岳POI・複数気象モデルを統合した登山向け天気判断アプリ" />
+  <title>山行判断ツール | V5</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="styles.css?v=5.0" />
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">MOUNTAIN WEATHER DECISION / V5</p>
+      <h1>山行判断ツール</h1>
+      <p>山に行くか？やめるか？</p>
+    </div>
+    <div class="hero-badge">V5</div>
+  </header>
+
+  <main>
+    <section class="panel input-panel">
+      <div class="section-title">
+        <div><span>01</span><h2>山とルートを選ぶ</h2></div>
+        <button id="fillExample" class="ghost">槍ヶ岳の例を入力</button>
+      </div>
+
+      <div class="wizard-intro">
+        <div>
+          <span class="wizard-kicker">ROUTE BUILDER</span>
+          <h3>① 山を選ぶ → ② 登山口 → ③ 経由ポイント → ④ 下山口</h3>
+          <p>候補を順番に選ぶだけでルートを作れます。途中の山小屋・テント場では「ここで宿泊」をONにすると翌日の行動時刻も自動計算します。</p>
+        </div>
+      </div>
+
+      <div class="mountain-picker-grid">
+        <label>山を選ぶ
+          <select id="mountainPreset">
+            <option value="">山名を選択</option>
+            <optgroup label="北アルプス">
+              <option value="槍ヶ岳">槍ヶ岳</option><option value="奥穂高岳">奥穂高岳</option><option value="北穂高岳">北穂高岳</option><option value="前穂高岳">前穂高岳</option><option value="燕岳">燕岳</option><option value="常念岳">常念岳</option><option value="双六岳">双六岳</option><option value="白馬岳">白馬岳</option><option value="唐松岳">唐松岳</option><option value="鹿島槍ヶ岳">鹿島槍ヶ岳</option><option value="剱岳">剱岳</option><option value="立山">立山</option>
+            </optgroup>
+            <optgroup label="南アルプス">
+              <option value="北岳">北岳</option><option value="間ノ岳">間ノ岳</option><option value="甲斐駒ヶ岳">甲斐駒ヶ岳</option><option value="仙丈ヶ岳">仙丈ヶ岳</option>
+            </optgroup>
+            <optgroup label="その他">
+              <option value="富士山">富士山</option><option value="赤岳">八ヶ岳・赤岳</option><option value="谷川岳">谷川岳</option><option value="木曽駒ヶ岳">木曽駒ヶ岳</option><option value="御嶽山">御嶽山</option><option value="大山">大山</option><option value="石鎚山">石鎚山</option><option value="宮之浦岳">宮之浦岳</option>
+            </optgroup>
+            <option value="__other__">その他の山を入力</option>
+          </select>
+        </label>
+        <label id="customMountainWrap" class="hidden">その他の山名
+          <input id="mountain" placeholder="例：笠ヶ岳" />
+        </label>
+        <label>登山日<input id="date" type="date" /></label>
+        <label>出発時刻<input id="wizardStartTime" type="time" value="05:00" /></label>
+        <label>歩行ペース
+          <select id="paceMultiplier">
+            <option value="0.8">速め（標準 × 0.8）</option>
+            <option value="1" selected>標準（× 1.0）</option>
+            <option value="1.2">ゆっくり（× 1.2）</option>
+            <option value="1.4">かなりゆっくり（× 1.4）</option>
+          </select>
+        </label>
+        <div class="load-poi-wrap">
+          <button id="loadPoiBtn" class="secondary wizard-load" type="button">この山のルート候補を読み込む</button>
+          <div id="loadPoiState" class="load-poi-state" aria-live="polite">山を選んで、候補を読み込んでください</div>
+        </div>
+      </div>
+
+      <div id="routeWizard" class="route-wizard hidden">
+        <div class="wizard-step-card start-card">
+          <div class="wizard-step-no">1</div>
+          <div class="wizard-step-main">
+            <label>出発する登山口
+              <select id="startTrailhead"><option value="">登山口を選択</option></select>
+            </label>
+          </div>
+        </div>
+
+        <div id="waypointWizardRows" class="waypoint-wizard-rows"></div>
+        <button id="addWizardWaypoint" class="ghost wizard-add-waypoint" type="button">＋ 次のポイントを追加</button>
+
+        <div class="wizard-step-card end-card">
+          <div class="wizard-step-no">↓</div>
+          <div class="wizard-step-main">
+            <label>下山する登山口
+              <select id="endTrailhead"><option value="">下山口を選択</option></select>
+            </label>
+            <label class="same-start-check"><input id="sameTrailhead" type="checkbox" /> 出発した登山口へ戻る</label>
+          </div>
+        </div>
+
+        <div class="wizard-route-actions">
+          <button id="createWizardRoute" class="primary" type="button">この順番でルートを作成</button>
+          <span id="wizardMeta" class="fineprint"></span>
+        </div>
+        <div id="wizardRouteState" class="wizard-route-state" aria-live="polite">ルートを選んで「この順番でルートを作成」を押してください</div>
+      </div>
+
+      <details class="advanced-details">
+        <summary>詳細編集・手入力地点を追加</summary>
+        <div id="poiPicker" class="poi-picker hidden">
+          <div class="poi-controls">
+            <label>種類
+              <select id="poiType">
+                <option value="all">すべて</option>
+                <option value="trailhead">登山口</option>
+                <option value="hut">山小屋・避難小屋</option>
+                <option value="camp">テント場</option>
+                <option value="pass">乗越・峠・鞍部</option>
+                <option value="peak">山頂</option>
+              </select>
+            </label>
+            <label>候補ポイント<select id="poiSelect"><option value="">候補を選択</option></select></label>
+            <label>通過時刻<input id="poiTime" type="time" value="06:00" /></label>
+            <button id="addPoiBtn" class="primary picker-add" type="button">ルートに追加</button>
+          </div>
+          <p id="poiMeta" class="fineprint"></p>
+        </div>
+      </details>
+
+      <div class="route-map-grid">
+        <div>
+          <div class="route-head">
+            <div>
+              <h3>ルート地点</h3>
+              <p>上から行動順。候補選択・地図クリック・手入力のどれでも追加できます。</p>
+            </div>
+            <button id="addPointBtn" class="secondary small-btn">＋ 手入力地点</button>
+          </div>
+          <div id="routePoints" class="route-points"></div>
+        </div>
+        <div class="map-wrap">
+          <div class="map-head">
+            <div><h3>ルートマップ</h3><p>地図クリックで任意地点も追加できます。</p></div>
+            <button id="fitMapBtn" class="ghost" type="button">ルート全体</button>
+          </div>
+          <div class="route-build-actions">
+            <button id="buildTrailBtn" class="secondary" type="button">① 登山道・距離を再計算</button>
+            <button id="autoTimeBtn" class="ghost" type="button" disabled>② 到達時刻を再計算</button>
+            <div id="routeRecalcState" class="route-recalc-state" aria-live="polite">地点や歩行ペースを変更したら、①→②の順で再計算できます。</div>
+          </div>
+          <p class="route-action-help">通常は上の「この順番でルートを作成」で①②まで自動実行します。ここは手動修正後の再計算用です。</p>
+          <div id="map" aria-label="登山ルート地図"></div>
+          <div class="map-legend">
+            <span><i class="dot trailhead"></i>登山口</span><span><i class="dot hut"></i>小屋</span><span><i class="dot camp"></i>テント場</span><span><i class="dot pass"></i>乗越/峠</span><span><i class="dot peak"></i>山頂</span><span><i class="dot manual"></i>任意</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="risk-row">
+        <span>重視リスク</span>
+        <label><input type="checkbox" class="risk" value="wind" checked /> 強風</label>
+        <label><input type="checkbox" class="risk" value="rain" checked /> 雨</label>
+        <label><input type="checkbox" class="risk" value="thunder" checked /> 雷</label>
+        <label><input type="checkbox" class="risk" value="cloud" checked /> ガス</label>
+        <label><input type="checkbox" class="risk" value="cold" checked /> 低温</label>
+      </div>
+      <div id="routeMetrics" class="route-metrics hidden">
+        <article><span>ルート距離</span><strong id="routeDistance">–</strong></article>
+        <article><span>累積登り</span><strong id="routeAscent">–</strong></article>
+        <article><span>累積下り</span><strong id="routeDescent">–</strong></article>
+        <article><span>推定CT</span><strong id="routeCourseTime">–</strong></article>
+      </div>
+      <div id="segmentTableWrap" class="segment-table-wrap hidden">
+        <div class="section-subhead"><b>区間サマリー</b><span>OSM登山道 + 90m DEMベース</span></div>
+        <div class="table-wrap"><table class="compact-table"><thead><tr><th>区間</th><th>距離</th><th>登り</th><th>下り</th><th>推定時間</th><th>状態</th></tr></thead><tbody id="segmentBody"></tbody></table></div>
+      </div>
+      <div class="actions"><button id="analyzeBtn" class="primary">ルート全体を分析</button></div>
+      <p class="fineprint">※ 周辺ポイントは OpenStreetMap の公開データから取得します。登録漏れ・名称揺れ・位置誤差があり得ます。重要な山行では公式地図・登山地図で必ず確認してください。</p>
+    </section>
+
+    <section id="status" class="status hidden"></section>
+
+    <section id="summary" class="hidden">
+      <div class="section-title"><div><span>02</span><h2>ルート総合判断</h2></div><div id="updatedAt" class="muted"></div></div>
+      <div class="summary-grid">
+        <article class="score-card"><div class="label">総合評価</div><div id="grade" class="grade">–</div><div id="verdict"></div></article>
+        <article><div class="label">ベスト地点</div><strong id="bestWindow">–</strong><small>ルート内で相対的に条件が良い地点</small></article>
+        <article><div class="label">最大風速</div><strong id="maxWind">–</strong><small>全地点・全モデルの最大値</small></article>
+        <article><div class="label">最大降水</div><strong id="maxRain">–</strong><small>各通過時刻の1時間降水量</small></article>
+        <article><div class="label">雷リスク</div><strong id="thunderRisk">–</strong><small>CAPE・降水から推定</small></article>
+        <article><div class="label">モデル一致度</div><strong id="confidence">–</strong><small>地点ごとのモデルばらつき</small></article>
+      </div>
+      <div id="warningBox" class="warning-box"></div>
+    </section>
+
+    <section id="routeForecastSection" class="panel hidden">
+      <div class="section-title"><div><span>03</span><h2>ルート別予報</h2></div><div class="muted">通過時刻 × 地点標高</div></div>
+      <div id="routeForecastCards" class="route-forecast-grid"></div>
+    </section>
+
+    <section id="overnightSection" class="panel hidden">
+      <div class="section-title"><div><span>04</span><h2>宿泊地の夜〜翌朝</h2></div><div class="muted">到着後〜翌朝出発 / 複数モデル比較</div></div>
+      <div id="overnightCards" class="overnight-grid"></div>
+    </section>
+
+    <section id="timelineSection" class="panel hidden">
+      <div class="section-title"><div><span>05</span><h2>ルートタイムライン</h2></div></div>
+      <div class="table-wrap">
+        <table><thead><tr><th>日時</th><th>種類</th><th>地点</th><th>標高</th><th>評価</th><th>気温</th><th>風</th><th>突風</th><th>雨</th><th>雲</th><th>雷</th><th>一致度</th></tr></thead><tbody id="timelineBody"></tbody></table>
+      </div>
+    </section>
+
+    <section id="modelsSection" class="panel hidden">
+      <div class="section-title"><div><span>06</span><h2>地点 × モデル詳細</h2></div></div>
+      <div id="modelDetails" class="model-details"></div>
+    </section>
+
+    <section id="decisionSection" class="decision-grid hidden">
+      <article class="panel"><div class="section-title"><div><span>07</span><h2>撤退ライン</h2></div></div><ul id="retreatLines"></ul></article>
+      <article class="panel"><div class="section-title"><div><span>08</span><h2>V5の読み方</h2></div></div>
+        <p>「登山道ルートを生成」で、登録ポイント間をOpenStreetMapの徒歩・登山道ネットワーク上で探索します。接続できない区間は直線フォールバックとして明示します。</p>
+        <p>標高はOpen-Meteo Elevation APIのDEMから取得し、距離・累積標高・推定コースタイムを算出します。宿泊地点は到着後〜翌朝出発までの時間別予報を別途取得し、最低気温・雨・風・雷を専用カードで表示します。</p>
+      </article>
+    </section>
+  </main>
+
+  <footer>Weather & elevation via Open-Meteo / POI & trail network via OpenStreetMap & Overpass API. Prototype for mountaineering decision support. 予報は安全を保証しません。</footer>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js?v=5.0"></script>
+</body>
+</html>

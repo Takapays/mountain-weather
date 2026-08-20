@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: mountain-weather-decision
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 server:app
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: UPSTREAM_TIMEOUT
+        value: "45"
+      - key: OVERPASS_TIMEOUT
+        value: "70"
+      - key: CACHE_TTL
+        value: "120"
